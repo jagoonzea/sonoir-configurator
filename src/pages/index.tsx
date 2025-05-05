@@ -265,8 +265,8 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen">
-      <div className="flex flex-col items-center w-full h-screen">
+    <main className="h-screen">
+      <div className="flex flex-col items-center w-full h-full">
         <div className="h-full w-full bg-slate-300 relative">
           {/* Model Preview */}
           <ModelViewer
