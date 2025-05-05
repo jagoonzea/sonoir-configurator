@@ -170,22 +170,8 @@ const Model: React.FC<{
           }
         }
         
-        // Create a highlight effect for the current part being edited
-        if (highlightedPart && child.name === highlightedPart) {
-          // Add a slight emissive glow to highlight the current part
-          if (!materials[highlightedPart]) {
-            // Only add emissive if user hasn't selected a material yet
-            const highlightMaterial = new THREE.MeshStandardMaterial({
-              color: new THREE.Color(0xffffff),
-              emissive: new THREE.Color(0x333333),
-              emissiveIntensity: 0.5
-            });
-            
-            child.material = highlightMaterial;
-          }
-        }
-        
-        // Apply materials based on part names
+        // Apply materials from parent component - don't add our own highlighting
+        // This ensures we don't override the enhanced highlighting from index.tsx
         for (const key in materials) {
           const materialSelection = materials[key];
           
@@ -217,9 +203,19 @@ const ModelViewer: React.FC<ViewerProps> = ({
   return (
     <Canvas camera={{ fov: 45 }}>
       <CameraController position={cameraAngle} onPositionUpdate={onPositionUpdate} />
-      <ambientLight intensity={0.5} />
-      <directionalLight position={[5, 5, 5]} />
-      <Environment preset="studio" />
+      <ambientLight intensity={0.3} />
+      <directionalLight 
+        position={[10, 10, 5]} 
+        intensity={0.6} 
+        castShadow
+        shadow-mapSize={[1024, 1024]}
+      />
+      <directionalLight 
+        position={[-5, 5, -2]} 
+        intensity={0.3} 
+        color="#b0c4de" 
+      />
+      <Environment preset="warehouse" />
       <Model 
         modelPath={modelPath} 
         materials={materials} 
@@ -228,7 +224,7 @@ const ModelViewer: React.FC<ViewerProps> = ({
       />
       <OrbitControls 
         makeDefault
-        enablePan={true}
+        enablePan={false}
         enableRotate={true}
         enableZoom={true}
         dampingFactor={0.05}

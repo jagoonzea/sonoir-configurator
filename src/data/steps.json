@@ -1,0 +1,58 @@
+[
+    {
+      "title": "Center Part",
+      "partName": "sonoirWithGrille_2",
+      "materials": [
+        { "name": "Plastic", "colors": ["bg-sky-400", "bg-lime-400"] },
+        { "name": "Wood", "colors": ["bg-amber-200", "bg-stone-700"] }
+      ]
+    },
+    {
+      "title": "Front and Back Part",
+      "partName": "sonoirWithGrille_3",
+      "materials": [
+        { "name": "Plastic", "colors": ["bg-sky-400", "bg-lime-400"] },
+        { "name": "Wood", "colors": ["bg-amber-200", "bg-stone-700"] }
+      ]
+    },
+    {
+      "title": "Knobs",
+      "partName": "sonoirWithGrille_5",
+      "materials": [
+        { "name": "Plastic", "colors": ["bg-sky-400", "bg-lime-400"] },
+        { "name": "Aluminium", "colors": ["bg-slate-300", "bg-amber-400"] }
+      ]
+    },
+    {
+      "title": "Feet",
+      "partName": "sonoirWithGrille_7",
+      "materials": [
+        { "name": "Plastic", "colors": ["bg-sky-400", "bg-lime-400"] },
+        { "name": "Aluminium", "colors": ["bg-slate-300", "bg-amber-400"] }
+      ]
+    },
+    {
+      "title": "Grille",
+      "partName": "sonoirWithGrille_8",
+      "materials": [
+        { "name": "Carbon", "colors": ["bg-neutral-800", "bg-neutral-600"] },
+        { "name": "Metal", "colors": ["bg-white", "bg-black"] }
+      ]
+    },
+    {
+      "title": "StrapKnob",
+      "partName": "sonoirWithGrille_9",
+      "materials": [
+        { "name": "Mesh", "colors": ["bg-amber-600", "bg-amber-900"] },
+        { "name": "Chrome", "colors": ["bg-gray-300", "bg-gray-500"] }
+      ]
+    },
+    {
+      "title": "Strap",
+      "partName": "sonoirWithGrille_11",
+      "materials": [
+        { "name": "Metal", "colors": ["bg-white", "bg-black"] },
+        { "name": "Mesh", "colors": ["bg-amber-600", "bg-amber-900"] }
+      ]
+    }
+]
