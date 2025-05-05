@@ -254,7 +254,7 @@ export default function Home() {
           emissive: new THREE.Color(0x666666),
           wireframe: false,
           transparent: true,
-          opacity: 0.8
+          opacity: 0.5
         }),
         color: '',
         partName: currentStep.partName
@@ -265,8 +265,8 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen max-h-screen overflow-hidden">
-      <div className="flex flex-col items-center w-full h-full max-h-screen">
+    <main className="h-svh overflow-hidden">
+      <div className="flex flex-col items-center w-full h-full">
         <div className="flex-grow w-full bg-slate-300 relative">
           {/* Model Preview */}
           <ModelViewer
