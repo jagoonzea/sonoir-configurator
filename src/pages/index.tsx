@@ -265,9 +265,9 @@ export default function Home() {
   };
 
   return (
-    <main className="h-screen">
-      <div className="flex flex-col items-center w-full h-full">
-        <div className="h-full w-full bg-slate-300 relative">
+    <main className="min-h-screen max-h-screen overflow-hidden">
+      <div className="flex flex-col items-center w-full h-full max-h-screen">
+        <div className="flex-grow w-full bg-slate-300 relative">
           {/* Model Preview */}
           <ModelViewer
             modelProps={{
@@ -291,7 +291,7 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="h-fit w-full">
+        <div className="w-full shrink-0">
           {/* Header with arrows */}
           <div className="flex justify-between items-center w-full p-6">
             {step > 0 ? (
