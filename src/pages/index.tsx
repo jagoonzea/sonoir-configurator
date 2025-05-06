@@ -5,10 +5,12 @@ import Image from 'next/image';
 import ModelViewer, { MaterialSelectionMap } from '@/components/ModelViewer';
 import * as THREE from 'three';
 
-type MaterialConfig = {
+type OptionConfig = {
   title: string;
   partName: string;
-  materials: string[];
+  options: string[];
+  prices: Record<string, number>;
+  noColorNeeded?: boolean;
 };
 
 const textureLoader = new THREE.TextureLoader();
@@ -73,53 +75,103 @@ const COLOR_MAP: Record<string, string> = {
 };
 
 export default function Home() {
-  const steps: MaterialConfig[] = [
+  const steps: OptionConfig[] = [
     {
       title: "Center Part",
       partName: "sonoirWithGrille_2",
-      materials: ["Plastic", "Wood"]
+      options: ["Plastic", "Wood"],
+      prices: {
+        "Plastic": 0,
+        "Wood": 20
+      }
     },
     {
       title: "Front and Back Part",
       partName: "sonoirWithGrille_3",
-      materials: ["Plastic", "Wood"]
+      options: ["Plastic", "Wood"],
+      prices: {
+        "Plastic": 0,
+        "Wood": 10
+      }
     },
     {
       title: "Knobs",
       partName: "sonoirWithGrille_5",
-      materials: ["Plastic", "Aluminium"]
+      options: ["Plastic", "Aluminium"],
+      prices: {
+        "Plastic": 0,
+        "Aluminium": 5
+      }
     },
     {
       title: "Feet",
       partName: "sonoirWithGrille_7",
-      materials: ["Plastic", "Aluminium"]
+      options: ["Plastic", "Aluminium"],
+      prices: {
+        "Plastic": 0,
+        "Aluminium": 15
+      }
     },
     {
       title: "Grille",
       partName: "sonoirWithGrille_8",
-      materials: ["None", "Fabric"]
+      options: ["None", "Fabric"],
+      prices: {
+        "None": 0,
+        "Fabric": 20
+      }
     },
     {
       title: "StrapKnob",
       partName: "sonoirWithGrille_9",
-      materials: ["Plastic", "Aluminium"]
+      options: ["Plastic", "Aluminium"],
+      prices: {
+        "Plastic": 0,
+        "Aluminium": 5
+      }
     },
     {
       title: "Strap",
       partName: "sonoirWithGrille_11",
-      materials: ["None", "Leather"]
+      options: ["None", "Leather"],
+      prices: {
+        "None": 0,
+        "Leather": 20
+      }
+    },
+    // Internal configuration steps
+    {
+      title: "Battery",
+      partName: "internal_battery",
+      options: ["No Battery", "8h", "16h"],
+      prices: {
+        "No Battery": 0,
+        "8h": 30,
+        "16h": 50
+      },
+      noColorNeeded: true
+    },
+    {
+      title: "Speaker Quality",
+      partName: "internal_speaker",
+      options: ["Basic", "Premium"],
+      prices: {
+        "Basic": 0,
+        "Premium": 50
+      },
+      noColorNeeded: true
     }
   ];
 
   const totalSteps = steps.length;
   const [step, setStep] = useState(0);
-  const [selections, setSelections] = useState(steps.map(() => ({ material: '', color: '' })));
+  const [selections, setSelections] = useState(steps.map(() => ({ option: '', color: '' })));
   const [cameraPosition, setCameraPosition] = useState<[number, number, number]>([0, 0, 0]);
   const [texturesLoaded, setTexturesLoaded] = useState(false);
   
   const currentStep = steps[step];
   const currentSelection = selections[step];
-  const currentColors = currentSelection.material ? MATERIALS[currentSelection.material as keyof typeof MATERIALS] || [] : [];
+  const currentColors = currentSelection.option ? MATERIALS[currentSelection.option as keyof typeof MATERIALS] || [] : [];
 
   const textures = useMemo(() => {
     const textureMap: Record<string, THREE.Texture> = {};
@@ -207,7 +259,10 @@ export default function Home() {
 
   const handleNext = () => {
     const currentSelection = selections[step];
-    if (currentSelection.material && currentSelection.color) {
+    const currentStepConfig = steps[step];
+    
+    // Allow proceeding with just option selection if noColorNeeded is true
+    if (currentSelection.option && (currentSelection.color || currentStepConfig.noColorNeeded)) {
       if (step < totalSteps - 1) {
         setStep(step + 1);
         setShowErrorMessage(false);
@@ -220,11 +275,11 @@ export default function Home() {
     }
   };
 
-  const handleMaterialSelect = (material: string) => {
+  const handleOptionSelect = (option: string) => {
     const updated = [...selections];
-    const availableColors = MATERIALS[material as keyof typeof MATERIALS] || [];
+    const availableColors = MATERIALS[option as keyof typeof MATERIALS] || [];
     const firstColor = availableColors.length > 0 ? availableColors[0] : '';
-    updated[step] = { material, color: firstColor };
+    updated[step] = { option, color: firstColor };
     setSelections(updated);
   };
 
@@ -244,6 +299,8 @@ export default function Home() {
     [0.21, 12.97, 46.42],
     [35.4, -1.13, 0.99],
     [2.78, -15.08, -30.95],
+    [15.0, 25.0, 35.0],     // Battery view
+    [15.0, 25.0, 35.0]       // Speaker quality view
   ];
   
   useEffect(() => {
@@ -322,22 +379,22 @@ export default function Home() {
     steps.forEach((stepConfig, index) => {
       const selection = selections[index];
       
-      if (selection.material) {
-        const baseMaterial = materialMap[selection.material] || new THREE.MeshStandardMaterial();
+      if (selection.option) {
+        const baseMaterial = materialMap[selection.option] || new THREE.MeshStandardMaterial();
         const materialInstance = baseMaterial.clone();
         
-        if (selection.material === 'None') {
+        if (selection.option === 'None') {
           materialInstance.transparent = true;
           materialInstance.opacity = 0.0;
           materialInstance.side = THREE.DoubleSide;
         } 
-        else if (['Wood', 'Leather', 'Fabric'].includes(selection.material) && selection.color) {
+        else if (['Wood', 'Leather', 'Fabric'].includes(selection.option) && selection.color) {
           const hexColor = COLOR_MAP[selection.color] || '#CCCCCC';
           
           if (materialInstance instanceof THREE.MeshStandardMaterial) {
             materialInstance.color = new THREE.Color(hexColor);
             
-            const textureKeyBase = `${selection.material}_${selection.color}`;
+            const textureKeyBase = `${selection.option}_${selection.color}`;
             
             const diffuseTexture = textures[`${textureKeyBase}_diffuse`];
             if (diffuseTexture) {
@@ -398,7 +455,17 @@ export default function Home() {
   return (
     <main className="h-svh overflow-hidden">
       <div className="flex flex-col items-center w-full h-full">
-        <div className="flex-grow w-full bg-slate-300 relative">
+        <div className="absolute top-4 left-1/2 transform -translate-x-1/2  px-6 py-3 z-10 flex flex-col items-center">
+          <p className="text-xl font-bold">€{100 + selections.reduce((total, selection, idx) => {
+            return total + (selection.option && steps[idx].prices ? steps[idx].prices[selection.option] || 0 : 0);
+          }, 0)}</p>
+          {currentSelection.option && (
+            <p className="text-sm text-gray-600">
+              + €{currentStep.prices[currentSelection.option] || 0}
+            </p>
+          )}
+        </div>
+        <div className="flex-grow w-full bg-slate-300 relative cursor-grab active:cursor-grabbing">
           <ModelViewer
             modelProps={{
               modelPath: '/models/sonoir.glb',
@@ -429,19 +496,38 @@ export default function Home() {
 
             {showErrorMessage && (
               <div className="absolute top-16 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-4 py-2 rounded-md shadow-md transition-opacity">
-                Please select a material and color first
+                Please select an option and color first
               </div>
             )}
 
-            <Image
-              src="/arrowright.svg"
-              alt="Next step"
-              width={24}
-              height={24}
-              onClick={handleNext}
-              className={`transition-transform duration-200 ease-in-out hover:translate-x-1 cursor-pointer
-                ${!selections[step].material || !selections[step].color ? 'opacity-50' : 'opacity-100'}`}
-            />
+            {step === totalSteps - 1 ? (
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                width="24" 
+                height="24" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                className={`transition-transform duration-200 ease-in-out hover:scale-110 cursor-pointer
+                  ${!selections[step].option || (!selections[step].color && !steps[step].noColorNeeded) ? 'opacity-50' : 'opacity-100'}`}
+                onClick={handleNext}
+              >
+                <path d="M20 6L9 17l-5-5"/>
+              </svg>
+            ) : (
+              <Image
+                src="/arrowright.svg"
+                alt="Next step"
+                width={24}
+                height={24}
+                onClick={handleNext}
+                className={`transition-transform duration-200 ease-in-out hover:translate-x-1 cursor-pointer
+                  ${!selections[step].option || (!selections[step].color && !steps[step].noColorNeeded) ? 'opacity-50' : 'opacity-100'}`}
+              />
+            )}
           </div>
 
           <div className="w-full h-2 bg-slate-300">
@@ -453,19 +539,19 @@ export default function Home() {
 
           <div className="flex flex-col p-6 gap-4">
             <div className="flex gap-4 justify-center">
-              {currentStep.materials.map((material) => (
+              {currentStep.options.map((option) => (
                 <button
-                  key={material}
-                  onClick={() => handleMaterialSelect(material)}
+                  key={option}
+                  onClick={() => handleOptionSelect(option)}
                   className={`px-6 py-3 rounded-full transition-all duration-200 border
                     ${
-                      currentSelection.material === material
+                      currentSelection.option === option
                         ? 'border-black scale-105'
                         : 'border-neutral-300'
                     }
                     hover:shadow-md hover:scale-105 hover:cursor-pointer`}
                 >
-                  {material}
+                  {option}
                 </button>
               ))}
             </div>
