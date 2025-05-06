@@ -497,7 +497,7 @@ export default function Home() {
       return (
         <div className="flex flex-col h-full">
           {/* Scrollable cards container with flex-grow */}
-          <div className="flex-1 overflow-y-auto pb-4 px-4 md:px-6 max-h-[40vh]">
+          <div className="flex-1 overflow-y-auto pb-4 px-4 md:px-6 max-h-[calc(67svh-218px)]">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4">
               {steps.map((stepConfig, idx) => {
                 const selection = selections[idx];
@@ -704,7 +704,7 @@ export default function Home() {
 
         {/* Bottom panel with dynamic height based on showOverview */}
         <div className={`w-full transition-all duration-300 ease-in-out ${
-          showOverview ? 'h-[67vh] md:h-2/3' : 'shrink-0'
+          showOverview ? 'h-[67svh] md:h-2/3' : 'shrink-0'
         }`}>
           <div className="flex justify-between items-center w-full p-4 px-6 max-w-[600px] mx-auto">
             {(step > 0 || showOverview) ? (
@@ -767,7 +767,8 @@ export default function Home() {
             ></div>
           </div>
 
-          <div className="max-w-[600px] mx-auto w-full">
+          <div className="max-w-[600px] mx-auto w-full" 
+          >
             {renderSelectionOrOverview()}
           </div>
         </div>
