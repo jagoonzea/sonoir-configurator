@@ -255,6 +255,8 @@ export default function Home() {
 
   const handlePrev = () => {
     if (showOverview) {
+      // Close any open editing cards when leaving the overview
+      setEditingCard(null);
       setShowOverview(false);
     } else if (step > 0) {
       setStep(step - 1);
@@ -683,7 +685,7 @@ export default function Home() {
         {/* Model viewer with dynamic height based on showOverview */}
         <div 
           className={`w-full bg-slate-300 relative cursor-grab active:cursor-grabbing transition-all duration-300 ease-in-out ${
-            showOverview ? 'h-[33vh] md:h-1/3' : 'flex-grow'
+            showOverview ? 'h-[33svh] md:h-1/3' : 'flex-grow'
           }`}
         >
           <ModelViewer
