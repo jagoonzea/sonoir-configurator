@@ -30,7 +30,7 @@ const CameraController: React.FC<{
   position: [number, number, number],
   onPositionUpdate?: (position: [number, number, number]) => void
 }> = ({ position, onPositionUpdate }) => {
-  const { camera } = useThree();
+  const { camera, controls } = useThree();
   const positionRef = useRef(position);
   const isInitialRender = useRef(true);
   const isAnimating = useRef(false);
@@ -38,6 +38,21 @@ const CameraController: React.FC<{
   const startPosition = useRef(new THREE.Vector3());
   const startTime = useRef(0);
   const animationDuration = 1000; // 1 second transition
+  
+  // Prevent OrbitControls from overriding our camera position
+  useEffect(() => {
+    // Disable controls temporarily during camera positioning
+    if (controls && 'enabled' in controls) {
+      const orbitControls = controls as any;
+      
+      if (isAnimating.current) {
+        orbitControls.enabled = false;
+      } else {
+        // Re-enable controls after animation completes
+        orbitControls.enabled = true;
+      }
+    }
+  }, [controls, isAnimating.current]);
   
   // Set initial camera position and handle position changes
   useEffect(() => {
@@ -71,8 +86,23 @@ const CameraController: React.FC<{
       startTime.current = performance.now();
       isAnimating.current = true;
       positionRef.current = [...position];
+      
+      // Reset orbit controls
+      if (controls) {
+        const orbitControls = controls as any;
+        if ('reset' in orbitControls) {
+          // Disable auto-rotation if it was enabled
+          if (orbitControls.autoRotate) {
+            orbitControls.autoRotate = false;
+          }
+          
+          // Ensure controls will target the center after our animation completes
+          orbitControls.target.set(0, 0, 0);
+          orbitControls.update();
+        }
+      }
     }
-  }, [camera, position]);
+  }, [camera, position, controls]);
   
   // Track camera position changes and handle animation
   useFrame(() => {
@@ -98,6 +128,18 @@ const CameraController: React.FC<{
       // End animation when complete
       if (progress >= 1) {
         isAnimating.current = false;
+        
+        // Force the final position exactly to avoid floating point errors
+        camera.position.set(
+          targetPosition.current.x,
+          targetPosition.current.y,
+          targetPosition.current.z
+        );
+        
+        // Re-enable controls after positioning is complete
+        if (controls && 'enabled' in controls) {
+          (controls as any).enabled = true;
+        }
       }
     }
     
@@ -111,6 +153,31 @@ const CameraController: React.FC<{
   });
   
   return null;
+};
+
+// OrbitControls wrapper to provide reset functionality and key for forcing recreation
+const ControlsWrapper: React.FC<{ cameraAngle: [number, number, number] }> = ({ cameraAngle }) => {
+  const controlsRef = useRef<any>(null);
+  
+  // Use an effect to reset controls when camera angle changes
+  useEffect(() => {
+    if (controlsRef.current) {
+      controlsRef.current.reset();
+    }
+  }, [cameraAngle]);
+  
+  return (
+    <OrbitControls
+      ref={controlsRef}
+      makeDefault
+      enablePan={false}
+      enableRotate={true}
+      enableZoom={true}
+      dampingFactor={0.05}
+      // Use a key based on camera angle to force re-creation when angle changes
+      key={`controls-${cameraAngle.join('-')}`}
+    />
+  );
 };
 
 const Model: React.FC<{ 
@@ -228,6 +295,7 @@ const ModelViewer: React.FC<ViewerProps> = ({
         enableRotate={true}
         enableZoom={true}
         dampingFactor={0.05}
+        enableDamping={true}
       />
     </Canvas>
   );

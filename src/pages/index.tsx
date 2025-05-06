@@ -168,6 +168,8 @@ export default function Home() {
   const [selections, setSelections] = useState(steps.map(() => ({ option: '', color: '' })));
   const [cameraPosition, setCameraPosition] = useState<[number, number, number]>([0, 0, 0]);
   const [texturesLoaded, setTexturesLoaded] = useState(false);
+  const [showOverview, setShowOverview] = useState(false);
+  const [editingCard, setEditingCard] = useState<number | null>(null);
   
   const currentStep = steps[step];
   const currentSelection = selections[step];
@@ -252,7 +254,11 @@ export default function Home() {
   }, []);
 
   const handlePrev = () => {
-    if (step > 0) setStep(step - 1);
+    if (showOverview) {
+      setShowOverview(false);
+    } else if (step > 0) {
+      setStep(step - 1);
+    }
   };
 
   const [showErrorMessage, setShowErrorMessage] = useState(false);
@@ -265,6 +271,10 @@ export default function Home() {
     if (currentSelection.option && (currentSelection.color || currentStepConfig.noColorNeeded)) {
       if (step < totalSteps - 1) {
         setStep(step + 1);
+        setShowErrorMessage(false);
+      } else if ( step === totalSteps - 1 && !showOverview) {
+        // Show overview when completing last step
+        setShowOverview(true);
         setShowErrorMessage(false);
       }
     } else {
@@ -286,6 +296,28 @@ export default function Home() {
   const handleColorSelect = (color: string) => {
     const updated = [...selections];
     updated[step] = { ...updated[step], color };
+    setSelections(updated);
+  };
+
+  const handleCardClick = (index: number) => {
+    if (editingCard === index) {
+      setEditingCard(null);
+    } else {
+      setEditingCard(index);
+    }
+  };
+
+  const handleCardOptionSelect = (index: number, option: string) => {
+    const updated = [...selections];
+    const availableColors = MATERIALS[option as keyof typeof MATERIALS] || [];
+    const firstColor = availableColors.length > 0 ? availableColors[0] : '';
+    updated[index] = { option, color: firstColor };
+    setSelections(updated);
+  };
+
+  const handleCardColorSelect = (index: number, color: string) => {
+    const updated = [...selections];
+    updated[index] = { ...updated[index], color };
     setSelections(updated);
   };
 
@@ -452,34 +484,230 @@ export default function Home() {
     return materialsMap;
   };
 
+  const calculateTotalPrice = () => {
+    const basePrice = 200;
+    const optionsPrice = selections.reduce((total, selection, idx) => {
+      return total + (selection.option && steps[idx].prices ? steps[idx].prices[selection.option] || 0 : 0);
+    }, 0);
+    return basePrice + optionsPrice;
+  };
+
+  const renderSelectionOrOverview = () => {
+    if (showOverview) {
+      return (
+        <div className="flex flex-col h-full">
+          {/* Scrollable cards container with flex-grow */}
+          <div className="flex-1 overflow-y-auto pb-4 px-4 md:px-6 max-h-[40vh]">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4">
+              {steps.map((stepConfig, idx) => {
+                const selection = selections[idx];
+                if (!selection.option) return null;
+                const isEditing = editingCard === idx;
+                const optionColors = selection.option ? MATERIALS[selection.option as keyof typeof MATERIALS] || [] : [];
+                
+                return (
+                  <div 
+                    key={idx} 
+                    className={`bg-white rounded-lg border border-stone-200 p-3 flex flex-col transition-all duration-300 ${
+                      isEditing ? 'shadow-lg border-amber-400' : 'hover:shadow-md cursor-pointer'
+                    }`}
+                    onClick={() => handleCardClick(idx)}
+                  >
+                    {/* Card header with title and price - no longer clickable separately */}
+                    <div className="flex justify-between items-center mb-4">
+                      <span className="font-medium text-stone-500 text-sm">{stepConfig.title}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-[#F7B932]">
+                          {stepConfig.prices[selection.option] > 0 ? 
+                            `+ €${stepConfig.prices[selection.option]}` : 
+                            ''}
+                        </span>
+                        <div className={`transition-transform duration-200 ${isEditing ? 'rotate-180' : ''}`}>
+                          <svg 
+                            xmlns="http://www.w3.org/2000/svg" 
+                            width="16" 
+                            height="16" 
+                            viewBox="0 0 24 24" 
+                            fill="none" 
+                            stroke="currentColor" 
+                            strokeWidth="2" 
+                            strokeLinecap="round" 
+                            strokeLinejoin="round" 
+                            className="text-stone-400"
+                          >
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Selected option display */}
+                    <div className="flex items-center gap-4 pl-1">
+                      <span className="text-stone-800">{selection.option}</span>
+                      {selection.color && !stepConfig.noColorNeeded && (
+                        <div 
+                          className={`w-6 h-6 rounded-full ${selection.color}`}
+                          style={{border: '1px solid #ccc'}}
+                        />
+                      )}
+                    </div>
+                    
+                    {/* Options when editing - prevent clicks from bubbling */}
+                    {isEditing && (
+                      <div className="flex flex-col w-fit gap-3 mt-3 pt-3 border-t border-stone-100" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex flex-wrap gap-2 justify-start">
+                          {stepConfig.options.map((option) => (
+                            <button
+                              key={option}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCardOptionSelect(idx, option);
+                              }}
+                              className={`px-3 py-2 text-sm rounded-full transition-all duration-200 border
+                                ${
+                                  selection.option === option
+                                    ? 'border-black bg-stone-100'
+                                    : 'border-neutral-300'
+                                }
+                                hover:shadow-md hover:bg-stone-50`}
+                            >
+                              {option}
+                            </button>
+                          ))}
+                        </div>
+                        
+                        {!stepConfig.noColorNeeded && optionColors.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {optionColors.map((color) => (
+                              <button
+                                key={color}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleCardColorSelect(idx, color);
+                                }}
+                                className={`w-8 h-8 rounded-full transition-all duration-200 border
+                                  ${color}
+                                  ${
+                                    selection.color === color
+                                      ? 'border-black scale-100'
+                                      : 'border-neutral-300 scale-90'
+                                  }
+                                  hover:scale-100`}
+                              ></button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          
+          {/* Fixed footer with pricing that doesn't scroll */}
+          <div className="flex-shrink-0 px-4 md:px-6 pb-4 pt-2 border-t border-stone-100">
+            <div className="flex justify-between font-bold text-lg bg-gray-50 p-3 rounded-lg">
+              <span>Total Price:</span>
+              <span>€{calculateTotalPrice()}</span>
+            </div>
+            
+            <button 
+              className="mt-4 w-full py-3 bg-[#F7B932] text-white rounded-full hover:bg-amber-500 transition-colors"
+              onClick={() => alert('Order submitted! This is where you would integrate payment processing.')}
+            >
+              Complete Order
+            </button>
+          </div>
+        </div>
+      );
+    }
+    
+    // Regular selection menu (non-overview mode)
+    return (
+      <div className="flex flex-col p-6 gap-4">
+        <div className="flex gap-4 justify-center">
+          {currentStep.options.map((option) => (
+            <button
+              key={option}
+              onClick={() => handleOptionSelect(option)}
+              className={`px-6 py-3 rounded-full transition-all duration-200 border
+                ${
+                  currentSelection.option === option
+                    ? 'border-black scale-105'
+                    : 'border-neutral-300'
+                }
+                hover:shadow-md hover:scale-105 hover:cursor-pointer`}
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex gap-2 justify-center min-h-[48px] flex-wrap max-w-md mx-auto">
+          {currentColors.length > 0 ? (
+            currentColors.map((color) => (
+              <button
+                key={color}
+                onClick={() => handleColorSelect(color)}
+                className={`w-10 h-10 rounded-full transition-all duration-200 border
+                  ${color}
+                  ${
+                    currentSelection.color === color
+                      ? 'border-black scale-100'
+                      : 'border-neutral-300 scale-70'
+                  }
+                  hover:scale-100 hover:cursor-pointer`}
+              ></button>
+            ))
+          ) : (
+            <div className="h-12" />
+          )}
+        </div>
+      </div>
+    );
+  };
+  
   return (
     <main className="h-svh overflow-hidden">
       <div className="flex flex-col items-center w-full h-full">
-        <div className="absolute top-4 left-1/2 transform -translate-x-1/2  px-6 py-3 z-10 flex flex-col items-center">
-          <p className="text-xl font-bold">€{100 + selections.reduce((total, selection, idx) => {
-            return total + (selection.option && steps[idx].prices ? steps[idx].prices[selection.option] || 0 : 0);
-          }, 0)}</p>
-          {currentSelection.option && (
+        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 px-6 py-3 z-10 flex flex-col items-center">
+          <p className="text-xl font-medium">€{calculateTotalPrice()}</p>
+          {!showOverview && currentSelection.option && (
             <p className="text-sm text-gray-600">
-              + €{currentStep.prices[currentSelection.option] || 0}
+              {currentStep.prices[currentSelection.option] == 0 ? '' : ("+ €" + (currentStep.prices[currentSelection.option] || 0))}
             </p>
           )}
         </div>
-        <div className="flex-grow w-full bg-slate-300 relative cursor-grab active:cursor-grabbing">
+        
+        {/* Model viewer with dynamic height based on showOverview */}
+        <div 
+          className={`w-full bg-slate-300 relative cursor-grab active:cursor-grabbing transition-all duration-300 ease-in-out ${
+            showOverview ? 'h-[33vh] md:h-1/3' : 'flex-grow'
+          }`}
+        >
           <ModelViewer
             modelProps={{
               modelPath: '/models/sonoir.glb',
               materials: createMaterialsMap(),
               useOnlyWithGrille: true,
+              highlightedPart: editingCard !== null ? steps[editingCard].partName : undefined
             }}
-            cameraAngle={cameraAngles[step]}
+            cameraAngle={
+              editingCard !== null ? cameraAngles[editingCard] : 
+              showOverview ? [15.0, 20.0, 30.0] : 
+              cameraAngles[step]
+            }
             onPositionUpdate={setCameraPosition}
           />
         </div>
 
-        <div className="w-full shrink-0">
-          <div className="flex justify-between items-center w-full p-4 px-6">
-            {step > 0 ? (
+        {/* Bottom panel with dynamic height based on showOverview */}
+        <div className={`w-full transition-all duration-300 ease-in-out ${
+          showOverview ? 'h-[67vh] md:h-2/3' : 'shrink-0'
+        }`}>
+          <div className="flex justify-between items-center w-full p-4 px-6 max-w-[600px] mx-auto">
+            {(step > 0 || showOverview) ? (
               <Image
                 src="/arrowleft.svg"
                 alt="Previous step"
@@ -492,7 +720,7 @@ export default function Home() {
               <div className="w-6" />
             )}
 
-            <h1 className="text-lg font-medium">{currentStep.title}</h1>
+            <h1 className="text-lg font-medium">{showOverview ? "Order Summary" : currentStep.title}</h1>
 
             {showErrorMessage && (
               <div className="absolute top-16 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-4 py-2 rounded-md shadow-md transition-opacity">
@@ -500,7 +728,9 @@ export default function Home() {
               </div>
             )}
 
-            {step === totalSteps - 1 ? (
+            {showOverview ? (
+              <div className="w-6" />
+            ) : step === totalSteps - 1 ? (
               <svg 
                 xmlns="http://www.w3.org/2000/svg" 
                 width="24" 
@@ -533,49 +763,12 @@ export default function Home() {
           <div className="w-full h-2 bg-slate-300">
             <div
               className="h-full bg-[#F7B932] transition-all duration-300"
-              style={{ width: `${progressPercent}%` }}
+              style={{ width: `${showOverview ? 100 : progressPercent}%` }}
             ></div>
           </div>
 
-          <div className="flex flex-col p-6 gap-4">
-            <div className="flex gap-4 justify-center">
-              {currentStep.options.map((option) => (
-                <button
-                  key={option}
-                  onClick={() => handleOptionSelect(option)}
-                  className={`px-6 py-3 rounded-full transition-all duration-200 border
-                    ${
-                      currentSelection.option === option
-                        ? 'border-black scale-105'
-                        : 'border-neutral-300'
-                    }
-                    hover:shadow-md hover:scale-105 hover:cursor-pointer`}
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
-
-            <div className="flex gap-2 justify-center min-h-[48px] flex-wrap max-w-md mx-auto">
-              {currentColors.length > 0 ? (
-                currentColors.map((color) => (
-                  <button
-                    key={color}
-                    onClick={() => handleColorSelect(color)}
-                    className={`w-10 h-10 rounded-full transition-all duration-200 border
-                      ${color}
-                      ${
-                        currentSelection.color === color
-                          ? 'border-black scale-100'
-                          : 'border-neutral-300 scale-70'
-                      }
-                      hover:scale-100 hover:cursor-pointer`}
-                  ></button>
-                ))
-              ) : (
-                <div className="h-12" />
-              )}
-            </div>
+          <div className="max-w-[600px] mx-auto w-full">
+            {renderSelectionOrOverview()}
           </div>
         </div>
       </div>
