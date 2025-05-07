@@ -608,12 +608,7 @@ export default function Home() {
           </div>
           
           {/* Fixed footer with pricing that doesn't scroll */}
-          <div className="flex-shrink-0 px-4 md:px-6 pb-4 pt-2 border-t border-stone-100">
-            <div className="flex justify-between font-bold text-lg bg-gray-50 p-3 rounded-lg">
-              <span>Total Price:</span>
-              <span>€{calculateTotalPrice()}</span>
-            </div>
-            
+          <div className="flex-shrink-0 px-4 md:px-6 pb-4 pt-2 border-t border-stone-100">            
             <button 
               className="mt-4 w-full py-3 bg-[#F7B932] text-white rounded-full hover:bg-amber-500 transition-colors"
               onClick={() => alert('Order submitted! This is where you would integrate payment processing.')}
@@ -673,16 +668,6 @@ export default function Home() {
   return (
     <main className="h-svh overflow-hidden">
       <div className="flex flex-col items-center w-full h-full">
-        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 px-6 py-3 z-10 flex flex-col items-center">
-          <p className="text-xl font-medium">€{calculateTotalPrice()}</p>
-          {!showOverview && currentSelection.option && (
-            <p className="text-sm text-gray-600">
-              {currentStep.prices[currentSelection.option] == 0 ? '' : ("+ €" + (currentStep.prices[currentSelection.option] || 0))}
-            </p>
-          )}
-        </div>
-        
-        {/* Model viewer with dynamic height based on showOverview */}
         <div 
           className={`w-full bg-slate-300 relative cursor-grab active:cursor-grabbing transition-all duration-300 ease-in-out ${
             showOverview ? 'h-[33svh] md:h-1/3' : 'flex-grow'
@@ -722,7 +707,17 @@ export default function Home() {
               <div className="w-6" />
             )}
 
-            <h1 className="text-lg font-medium">{showOverview ? "Order Summary" : currentStep.title}</h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-lg font-medium">{showOverview ? "Order Summary" : currentStep.title}</h1>
+              <div className="bg-white px-3 py-1 flex items-center">
+                <p className="font-medium text-lg text-stone-800">€{calculateTotalPrice()}</p>
+                {!showOverview && currentSelection.option && currentStep.prices[currentSelection.option] > 0 && (
+                  <span className="text-xs text-amber-600 ml-1">
+                    (+{currentStep.prices[currentSelection.option]})
+                  </span>
+                )}
+              </div>
+            </div>
 
             {showErrorMessage && (
               <div className="absolute top-16 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-4 py-2 rounded-md shadow-md transition-opacity">
