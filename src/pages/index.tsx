@@ -500,7 +500,7 @@ export default function Home() {
       return (
         <div className="flex flex-col h-full">
           {/* Scrollable cards container with flex-grow */}
-          <div className="flex-1 overflow-y-auto pb-4 px-4 md:px-6 max-h-[calc(67svh-314px)]">
+          <div className="flex-1 overflow-y-auto pb-4 px-4 md:px-6 max-h-[calc(100%-120px)]">
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-4 items-start">
               {steps.map((stepConfig, idx) => {
                 const selection = selections[idx];
@@ -611,18 +611,18 @@ export default function Home() {
           <div className="flex-shrink-0 px-4 md:px-6 pb-4 pt-2 border-t border-stone-100">            
             <div className="mt-4 w-full bg-black rounded-2xl p-4 text-white">
               <div className="text-lg">Total</div>
-              <div className="flex items-baseline gap-1">
-                <span className="text-xl">€</span>
-                <span className="text-3xl font-medium">{calculateTotalPrice().toFixed(2)}</span>
+              <div className="flex items-baseline">
+                <span className="text-2xl">€</span>
+                <span className="text-5xl font-medium">{calculateTotalPrice().toFixed(2)}</span>
               </div>
-              <div className="text-sm text-gray-400">Including 50€ already paid by reserving</div>
+              <div className="text-sm text-gray-400 mb-4">Including 50€ already paid by reserving</div>
+              <button 
+                className="w-full py-2 px-3 bg-white text-black rounded-full hover:bg-amber-500 transition-colors text-md hover:cursor-pointer"
+                onClick={() => alert('Configuration finished! This is where you would integrate payment processing.')}
+              >
+                Finish configuration
+              </button>
             </div>
-            <button 
-              className="mt-4 w-full py-4 bg-[#F7B932] text-white rounded-full hover:bg-amber-500 transition-colors text-lg font-medium"
-              onClick={() => alert('Configuration finished! This is where you would integrate payment processing.')}
-            >
-              Finish configuration
-            </button>
           </div>
         </div>
       );
@@ -674,7 +674,7 @@ export default function Home() {
   };
   
   return (
-    <main className="h-svh overflow-hidden">
+    <main className="h-svh">
       <div className="flex flex-col items-center w-full h-full">
         <div 
           className={`w-full bg-slate-300 relative cursor-grab active:cursor-grabbing transition-all duration-300 ease-in-out ${
