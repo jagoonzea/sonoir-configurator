@@ -500,7 +500,7 @@ export default function Home() {
       return (
         <div className="flex flex-col h-full">
           {/* Scrollable cards container with flex-grow */}
-          <div className="flex-1 overflow-y-auto pb-4 px-4 md:px-6 max-h-[calc(67svh-218px)]">
+          <div className="flex-1 overflow-y-auto pb-4 px-4 md:px-6 max-h-[calc(67svh-314px)]">
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-4 items-start">
               {steps.map((stepConfig, idx) => {
                 const selection = selections[idx];
@@ -512,14 +512,14 @@ export default function Home() {
                 return (
                   <div 
                     key={idx} 
-                    className={`bg-white rounded-lg border border-stone-200 p-3 flex flex-col transition-all duration-300 h-auto self-start min-h-[130px] ${
+                    className={`bg-white rounded-2xl border border-stone-200 p-4 flex flex-col transition-all duration-300 h-auto justify-between self-start min-h-[130px] ${
                       isEditing ? 'shadow-lg border-amber-400' : 'hover:shadow-md'
                     } cursor-pointer`}
                     onClick={() => handleCardClick(idx)}
                   >
                     {/* Card header with title and price */}
                     <div className="flex justify-between items-center mb-2">
-                      <span className="font-medium text-stone-600 text-lg">{stepConfig.title}</span>
+                      <span className="font-medium text-stone-600 text-md">{stepConfig.title}</span>
                       <div className="flex items-center">
                         <svg 
                           xmlns="http://www.w3.org/2000/svg" 
@@ -540,15 +540,15 @@ export default function Home() {
                     
                     {/* Price display in large font */}
                     <div className="flex items-end gap-1 mb-2">
-                    {stepConfig.prices[selection.option] == 0 ? (<span className="text-xl font-medium">Included</span>) : (<><span className="text-xl font-medium pb-[2px]">€</span><span className="text-3xl font-semibold">{stepConfig.prices[selection.option]}</span></>)}
+                    {stepConfig.prices[selection.option] == 0 ? (<span className="text-xl font-medium">Included</span>) : (<><span className="text-xl font-medium pb-[2px]">€</span><span className="text-3xl font-medium">{stepConfig.prices[selection.option]}</span></>)}
                     </div>
 
                     {/* Selected option display */}
                     <div className="flex items-center gap-4 pl-1">
-                      <span className="text-stone-600">{selection.option}</span>
+                      <span className="text-stone-600 text-sm">{selection.option}</span>
                       {selection.color && !stepConfig.noColorNeeded && (
                         <div 
-                          className={`w-6 h-6 rounded-full ${selection.color}`}
+                          className={`w-4 h-4 rounded-full ${selection.color}`}
                           style={{border: '1px solid #ccc'}}
                         />
                       )}
@@ -609,11 +609,19 @@ export default function Home() {
           
           {/* Fixed footer with pricing that doesn't scroll */}
           <div className="flex-shrink-0 px-4 md:px-6 pb-4 pt-2 border-t border-stone-100">            
+            <div className="mt-4 w-full bg-black rounded-2xl p-4 text-white">
+              <div className="text-lg">Total</div>
+              <div className="flex items-baseline gap-1">
+                <span className="text-xl">€</span>
+                <span className="text-3xl font-medium">{calculateTotalPrice().toFixed(2)}</span>
+              </div>
+              <div className="text-sm text-gray-400">Including 50€ already paid by reserving</div>
+            </div>
             <button 
-              className="mt-4 w-full py-3 bg-[#F7B932] text-white rounded-full hover:bg-amber-500 transition-colors"
-              onClick={() => alert('Order submitted! This is where you would integrate payment processing.')}
+              className="mt-4 w-full py-4 bg-[#F7B932] text-white rounded-full hover:bg-amber-500 transition-colors text-lg font-medium"
+              onClick={() => alert('Configuration finished! This is where you would integrate payment processing.')}
             >
-              Complete Order
+              Finish configuration
             </button>
           </div>
         </div>
