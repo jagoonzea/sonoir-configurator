@@ -86,7 +86,7 @@ export default function Home() {
       }
     },
     {
-      title: "Front and Back Part",
+      title: "Side Panels",
       partName: "sonoirWithGrille_3",
       options: ["Plastic", "Wood"],
       prices: {
@@ -143,16 +143,16 @@ export default function Home() {
     {
       title: "Battery",
       partName: "internal_battery",
-      options: ["No Battery", "8h", "16h"],
+      options: ["No Battery", "6 hours", "12 hours"],
       prices: {
         "No Battery": 0,
-        "8h": 30,
-        "16h": 50
+        "6 hours": 30,
+        "12 hours": 50
       },
       noColorNeeded: true
     },
     {
-      title: "Speaker Quality",
+      title: "Sound",
       partName: "internal_speaker",
       options: ["Basic", "Premium"],
       prices: {
@@ -174,6 +174,7 @@ export default function Home() {
   const currentStep = steps[step];
   const currentSelection = selections[step];
   const currentColors = currentSelection.option ? MATERIALS[currentSelection.option as keyof typeof MATERIALS] || [] : [];
+
 
   const textures = useMemo(() => {
     const textureMap: Record<string, THREE.Texture> = {};
@@ -500,52 +501,51 @@ export default function Home() {
         <div className="flex flex-col h-full">
           {/* Scrollable cards container with flex-grow */}
           <div className="flex-1 overflow-y-auto pb-4 px-4 md:px-6 max-h-[calc(67svh-218px)]">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-4 items-start">
               {steps.map((stepConfig, idx) => {
                 const selection = selections[idx];
                 if (!selection.option) return null;
                 const isEditing = editingCard === idx;
                 const optionColors = selection.option ? MATERIALS[selection.option as keyof typeof MATERIALS] || [] : [];
                 
+                // Different card style based on the image provided
                 return (
                   <div 
                     key={idx} 
-                    className={`bg-white rounded-lg border border-stone-200 p-3 flex flex-col transition-all duration-300 ${
-                      isEditing ? 'shadow-lg border-amber-400' : 'hover:shadow-md cursor-pointer'
-                    }`}
+                    className={`bg-white rounded-lg border border-stone-200 p-3 flex flex-col transition-all duration-300 h-auto self-start min-h-[130px] ${
+                      isEditing ? 'shadow-lg border-amber-400' : 'hover:shadow-md'
+                    } cursor-pointer`}
                     onClick={() => handleCardClick(idx)}
                   >
-                    {/* Card header with title and price - no longer clickable separately */}
-                    <div className="flex justify-between items-center mb-4">
-                      <span className="font-medium text-stone-500 text-sm">{stepConfig.title}</span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-[#F7B932]">
-                          {stepConfig.prices[selection.option] > 0 ? 
-                            `+ €${stepConfig.prices[selection.option]}` : 
-                            ''}
-                        </span>
-                        <div className={`transition-transform duration-200 ${isEditing ? 'rotate-180' : ''}`}>
-                          <svg 
-                            xmlns="http://www.w3.org/2000/svg" 
-                            width="16" 
-                            height="16" 
-                            viewBox="0 0 24 24" 
-                            fill="none" 
-                            stroke="currentColor" 
-                            strokeWidth="2" 
-                            strokeLinecap="round" 
-                            strokeLinejoin="round" 
-                            className="text-stone-400"
-                          >
-                            <polyline points="6 9 12 15 18 9"></polyline>
-                          </svg>
-                        </div>
+                    {/* Card header with title and price */}
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-medium text-stone-600 text-lg">{stepConfig.title}</span>
+                      <div className="flex items-center">
+                        <svg 
+                          xmlns="http://www.w3.org/2000/svg" 
+                          width="20" 
+                          height="20" 
+                          viewBox="0 0 24 24" 
+                          fill="none" 
+                          stroke="currentColor" 
+                          strokeWidth="2" 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round"
+                          className={`text-stone-400 transition-transform duration-200 ${isEditing ? '-rotate-180' : ''}`}
+                        >
+                          <path d="m6 9 6 6 6-6"/>
+                        </svg>
                       </div>
                     </div>
                     
+                    {/* Price display in large font */}
+                    <div className="flex items-end gap-1 mb-2">
+                    {stepConfig.prices[selection.option] == 0 ? (<span className="text-xl font-medium">Included</span>) : (<><span className="text-xl font-medium pb-[2px]">€</span><span className="text-3xl font-semibold">{stepConfig.prices[selection.option]}</span></>)}
+                    </div>
+
                     {/* Selected option display */}
                     <div className="flex items-center gap-4 pl-1">
-                      <span className="text-stone-800">{selection.option}</span>
+                      <span className="text-stone-600">{selection.option}</span>
                       {selection.color && !stepConfig.noColorNeeded && (
                         <div 
                           className={`w-6 h-6 rounded-full ${selection.color}`}
@@ -623,7 +623,7 @@ export default function Home() {
     // Regular selection menu (non-overview mode)
     return (
       <div className="flex flex-col p-6 gap-4">
-        <div className="flex gap-4 justify-center">
+        <div className="flex gap-4 justify-center flex-wrap">
           {currentStep.options.map((option) => (
             <button
               key={option}
@@ -636,7 +636,7 @@ export default function Home() {
                 }
                 hover:shadow-md hover:scale-105 hover:cursor-pointer`}
             >
-              {option}
+              {currentStep.prices[option] == 0 ? option : `${option} + €${currentStep.prices[option]}`}
             </button>
           ))}
         </div>
@@ -709,14 +709,6 @@ export default function Home() {
 
             <div className="flex items-center gap-3">
               <h1 className="text-lg font-medium">{showOverview ? "Order Summary" : currentStep.title}</h1>
-              <div className="bg-white px-3 py-1 flex items-center">
-                <p className="font-medium text-lg text-stone-800">€{calculateTotalPrice()}</p>
-                {!showOverview && currentSelection.option && currentStep.prices[currentSelection.option] > 0 && (
-                  <span className="text-xs text-amber-600 ml-1">
-                    (+{currentStep.prices[currentSelection.option]})
-                  </span>
-                )}
-              </div>
             </div>
 
             {showErrorMessage && (
