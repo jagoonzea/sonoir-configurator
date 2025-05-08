@@ -267,8 +267,27 @@ const ModelViewer: React.FC<ViewerProps> = ({
   cameraAngle,
   onPositionUpdate
 }) => {
+  // State to track if the viewport is desktop or mobile
+  const [isDesktop, setIsDesktop] = React.useState(false);
+
+  // Check if the viewport is desktop on mount and when window resizes
+  React.useEffect(() => {
+    const checkIfDesktop = () => {
+      setIsDesktop(window.innerWidth >= 768); // 768px is standard md breakpoint in Tailwind
+    };
+    
+    // Check on mount
+    checkIfDesktop();
+    
+    // Add event listener for window resize
+    window.addEventListener('resize', checkIfDesktop);
+    
+    // Clean up
+    return () => window.removeEventListener('resize', checkIfDesktop);
+  }, []);
+
   return (
-    <Canvas camera={{ fov: 45 }}>
+    <Canvas camera={{ fov: 60 }}>
       <CameraController position={cameraAngle} onPositionUpdate={onPositionUpdate} />
       <ambientLight intensity={0.3} />
       <directionalLight 
@@ -296,7 +315,7 @@ const ModelViewer: React.FC<ViewerProps> = ({
         enableZoom={true}
         dampingFactor={0.05}
         enableDamping={true}
-        minDistance={30}
+        minDistance={isDesktop ? 40 : 20}
         maxDistance={100}
       />
     </Canvas>

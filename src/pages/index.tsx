@@ -326,16 +326,38 @@ export default function Home() {
 
   const progressPercent = ((step + 1) / totalSteps) * 100;
 
+  // State to track if the viewport is desktop or mobile
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  // Check if the viewport is desktop on mount and when window resizes
+  useEffect(() => {
+    const checkIfDesktop = () => {
+      setIsDesktop(window.innerWidth >= 768); // 768px is standard md breakpoint in Tailwind
+    };
+    
+    // Check on mount
+    checkIfDesktop();
+    
+    // Add event listener for window resize
+    window.addEventListener('resize', checkIfDesktop);
+    
+    // Clean up
+    return () => window.removeEventListener('resize', checkIfDesktop);
+  }, []);
+
+  // Scale factor to move the camera further out while maintaining the same angles
+  const scaleFactor = isDesktop ? 1.5 : 1.0; // Only apply zoom-out on desktop
+
   const cameraAngles: [number, number, number][] = [
-    [44.49, 22.57, 25.79],
-    [44.01, 18.35, -29.68],  
-    [0.57, 48.29, 28.66],  
-    [29.51, -18.23, 16.27], 
-    [0.21, 12.97, 46.42],
-    [35.4, -1.13, 0.99],
-    [2.78, -15.08, -30.95],
-    [15.0, 25.0, 35.0],     // Battery view
-    [15.0, 25.0, 35.0]       // Speaker quality view
+    [44.49 * scaleFactor, 22.57 * scaleFactor, 25.79 * scaleFactor],
+    [44.01 * scaleFactor, 18.35 * scaleFactor, -29.68 * scaleFactor],  
+    [0.57 * scaleFactor, 48.29 * scaleFactor, 28.66 * scaleFactor],  
+    [29.51 * scaleFactor, -18.23 * scaleFactor, 16.27 * scaleFactor], 
+    [0.21 * scaleFactor, 12.97 * scaleFactor, 46.42 * scaleFactor],
+    [35.4 * scaleFactor, -1.13 * scaleFactor, 0.99 * scaleFactor],
+    [2.78 * scaleFactor, -15.08 * scaleFactor, -30.95 * scaleFactor],
+    [15.0 * scaleFactor, 25.0 * scaleFactor, 35.0 * scaleFactor],     // Battery view
+    [15.0 * scaleFactor, 25.0 * scaleFactor, 35.0 * scaleFactor]       // Speaker quality view
   ];
   
   useEffect(() => {
@@ -500,7 +522,7 @@ export default function Home() {
       return (
         <div className="flex flex-col h-full">
           {/* Scrollable cards container with flex-grow */}
-          <div className="flex-1 overflow-y-auto pb-4 px-4 md:px-6 max-h-[30svh] md:max-h-none">
+          <div className="flex-1 overflow-y-auto pb-4 px-4 md:px-6 max-h-none">
             <div className="grid grid-cols-2 gap-3 pt-4 items-start">
               {steps.map((stepConfig, idx) => {
                 const selection = selections[idx];
@@ -676,10 +698,21 @@ export default function Home() {
   };
   
   return (
-    <main className="h-svh md:h-auto md:min-h-svh bg-stone-200">
+    <main className={`h-svh ${showOverview ? 'overflow-auto' : 'overflow-hidden'} md:overflow-auto md:h-auto md:min-h-svh bg-stone-200 relative`}>
+      {/* Error notification at the top of the page - fixed for both mobile and desktop */}
+      {showErrorMessage && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg transition-opacity z-50 flex items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          Please select an option and color first
+        </div>
+      )}
       <div className="flex flex-col items-center w-full h-full">
         <div 
-          className={`w-full relative md:fixed md:h-full bg-stone-200  z-0 cursor-grab active:cursor-grabbing transition-all duration-300 ease-in-out ${
+          className={`w-full relative md:fixed md:h-full bg-stone-200 z-0 cursor-grab active:cursor-grabbing transition-all duration-300 ease-in-out ${
             showOverview ? '' : 'flex-grow'
           }`}
         >
@@ -703,8 +736,8 @@ export default function Home() {
         </div>
 
         {/* Bottom panel with dynamic height based on showOverview */}
-        <div className={`w-full md:w-fit md:min-w-[550px] h-fit z-50 transition-all duration-300 ease-in-out bg-white md:rounded-3xl absolute ${
-          showOverview ? 'md:top-[50svh]' : 'bottom-8'
+        <div className={`w-full md:w-fit md:min-w-[550px] h-fit z-50 bottom-0 transition-all duration-300 ease-in-out bg-white md:rounded-3xl md:absolute ${
+          showOverview ? 'md:top-[50svh]' : ' md:bottom-8'
         }`}>
           <div className="flex justify-between items-center w-full p-4 px-6 max-w-[600px] mx-auto">
             {(step > 0 || showOverview) ? (
@@ -723,12 +756,6 @@ export default function Home() {
             <div className="flex items-center gap-3">
               <h1 className="text-lg font-medium">{showOverview ? "Order Summary" : currentStep.title}</h1>
             </div>
-
-            {showErrorMessage && (
-              <div className="absolute top-16 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-4 py-2 rounded-md shadow-md transition-opacity">
-                Please select an option and color first
-              </div>
-            )}
 
             {showOverview ? (
               <div className="w-6" />
