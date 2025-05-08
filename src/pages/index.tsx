@@ -346,7 +346,7 @@ export default function Home() {
   }, []);
 
   // Scale factor to move the camera further out while maintaining the same angles
-  const scaleFactor = isDesktop ? 1.5 : 1.0; // Only apply zoom-out on desktop
+  const scaleFactor = isDesktop ? 1.2 : 1.0; // Only apply zoom-out on desktop
 
   const cameraAngles: [number, number, number][] = [
     [44.49 * scaleFactor, 22.57 * scaleFactor, 25.79 * scaleFactor],
