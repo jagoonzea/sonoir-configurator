@@ -500,8 +500,8 @@ export default function Home() {
       return (
         <div className="flex flex-col h-full">
           {/* Scrollable cards container with flex-grow */}
-          <div className="flex-1 overflow-y-auto pb-4 px-4 md:px-6 max-h-[calc(100%-120px)]">
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-4 items-start">
+          <div className="flex-1 overflow-y-auto pb-4 px-4 md:px-6 max-h-[30svh] md:max-h-none">
+            <div className="grid grid-cols-2 gap-3 pt-4 items-start">
               {steps.map((stepConfig, idx) => {
                 const selection = selections[idx];
                 if (!selection.option) return null;
@@ -554,6 +554,8 @@ export default function Home() {
                       )}
                     </div>
                     
+                    
+                    
                     {/* Options when editing - prevent clicks from bubbling */}
                     {isEditing && (
                       <div className="flex flex-col w-fit gap-3 mt-3 pt-3 border-t border-stone-100" onClick={(e) => e.stopPropagation()}>
@@ -579,7 +581,7 @@ export default function Home() {
                         </div>
                         
                         {!stepConfig.noColorNeeded && optionColors.length > 0 && (
-                          <div className="flex flex-wrap gap-2 mt-2">
+                          <div className="flex flex-wrap gap-2 mt-2 max-w-[200px]">
                             {optionColors.map((color) => (
                               <button
                                 key={color}
@@ -674,13 +676,14 @@ export default function Home() {
   };
   
   return (
-    <main className="h-svh">
+    <main className="h-svh md:h-auto md:min-h-svh bg-stone-200">
       <div className="flex flex-col items-center w-full h-full">
         <div 
-          className={`w-full bg-slate-300 relative cursor-grab active:cursor-grabbing transition-all duration-300 ease-in-out ${
-            showOverview ? 'h-[33svh] md:h-1/3' : 'flex-grow'
+          className={`w-full relative md:fixed md:h-full bg-stone-200  z-0 cursor-grab active:cursor-grabbing transition-all duration-300 ease-in-out ${
+            showOverview ? '' : 'flex-grow'
           }`}
         >
+          <div className={`h-full  ${showOverview ? 'md:h-1/2' : 'md:h-3/4'}`}>
           <ModelViewer
             modelProps={{
               modelPath: '/models/sonoir.glb',
@@ -695,11 +698,13 @@ export default function Home() {
             }
             onPositionUpdate={setCameraPosition}
           />
+          </div>
+          
         </div>
 
         {/* Bottom panel with dynamic height based on showOverview */}
-        <div className={`w-full transition-all duration-300 ease-in-out ${
-          showOverview ? 'h-[67svh] md:h-2/3' : 'shrink-0'
+        <div className={`w-full md:w-fit md:min-w-[550px] h-fit z-50 transition-all duration-300 ease-in-out bg-white md:rounded-3xl absolute ${
+          showOverview ? 'md:top-[50svh]' : 'bottom-8'
         }`}>
           <div className="flex justify-between items-center w-full p-4 px-6 max-w-[600px] mx-auto">
             {(step > 0 || showOverview) ? (
@@ -757,14 +762,14 @@ export default function Home() {
             )}
           </div>
 
-          <div className="w-full h-2 bg-slate-300">
+          <div className="w-full h-2 bg-stone-300">
             <div
               className="h-full bg-[#F7B932] transition-all duration-300"
               style={{ width: `${showOverview ? 100 : progressPercent}%` }}
             ></div>
           </div>
 
-          <div className="max-w-[600px] mx-auto w-full" 
+          <div className="mx-auto w-full" 
           >
             {renderSelectionOrOverview()}
           </div>
