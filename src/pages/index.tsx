@@ -514,7 +514,16 @@ export default function Home() {
     const optionsPrice = selections.reduce((total, selection, idx) => {
       return total + (selection.option && steps[idx].prices ? steps[idx].prices[selection.option] || 0 : 0);
     }, 0);
-    return basePrice + optionsPrice;
+    
+    const subtotal = basePrice + optionsPrice;
+    const reservationFee = 49.99;
+    const totalPrice = subtotal - reservationFee;
+    
+    return {
+      subtotal,
+      reservationFee,
+      totalPrice
+    };
   };
 
   const renderSelectionOrOverview = () => {
@@ -634,12 +643,30 @@ export default function Home() {
           {/* Fixed footer with pricing that doesn't scroll */}
           <div className="flex-shrink-0 px-4 md:px-6 pb-4 pt-2 border-t border-stone-100">            
             <div className="mt-4 w-full bg-black rounded-2xl p-4 text-white">
-              <div className="text-lg">Total</div>
-              <div className="flex items-baseline">
-                <span className="text-2xl">€</span>
-                <span className="text-5xl font-medium">{calculateTotalPrice().toFixed(2)}</span>
+              <div className="flex flex-col gap-1">
+                <div className="flex justify-between items-baseline mb-1">
+                  <span className="text-md text-gray-300">Subtotal:</span>
+                  <div className="flex items-baseline">
+                    <span className="text-xl">€</span>
+                    <span className="text-2xl font-medium">{calculateTotalPrice().subtotal.toFixed(2)}</span>
+                  </div>
+                </div>
+                <div className="flex justify-between items-baseline mb-1">
+                  <span className="text-md text-gray-300">Reservation fee:</span>
+                  <div className="flex items-baseline text-green-400">
+                    <span className="text-xl">-€</span>
+                    <span className="text-2xl font-medium">{calculateTotalPrice().reservationFee.toFixed(2)}</span>
+                  </div>
+                </div>
+                <div className="border-t border-gray-700 my-2"></div>
+                <div className="flex justify-between items-baseline mb-3">
+                  <span className="text-lg">Total:</span>
+                  <div className="flex items-baseline">
+                    <span className="text-2xl">€</span>
+                    <span className="text-4xl font-medium">{calculateTotalPrice().totalPrice.toFixed(2)}</span>
+                  </div>
+                </div>
               </div>
-              <div className="text-sm text-gray-400 mb-4">Including 50€ already paid by reserving</div>
               <button 
                 className="w-full py-2 px-3 bg-white text-black rounded-full hover:bg-amber-500 transition-colors text-md hover:cursor-pointer"
                 onClick={() => alert('Configuration finished! This is where you would integrate payment processing.')}
