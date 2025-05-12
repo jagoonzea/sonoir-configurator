@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import ModelViewer, { MaterialSelectionMap } from '@/components/ModelViewer';
 import * as THREE from 'three';
+import { HexColorPicker } from 'react-colorful';
 
 type OptionConfig = {
   title: string;
@@ -74,7 +75,22 @@ const COLOR_MAP: Record<string, string> = {
   'bg-transparent': 'transparent'
 };
 
-export default function Home() {
+export default function Home() {  // State for camera reset button
+  const [showResetButton, setShowResetButton] = useState(false);
+  // Add a reset key that will change to force camera reset
+  const [cameraResetKey, setCameraResetKey] = useState(0);  // Background color states
+  const [backgroundColor, setBackgroundColor] = useState('bg-stone-200');
+  const [customBackgroundColor, setCustomBackgroundColor] = useState('#e7e5e4');
+  const [showColorMenu, setShowColorMenu] = useState(false);
+  const [useCustomColor, setUseCustomColor] = useState(false);
+  
+  // Available background color options
+  const backgroundColors = [
+    { name: 'Light', class: 'bg-stone-200', color: '#e7e5e4' },
+    { name: 'Dark', class: 'bg-slate-800', color: '#1e293b' },
+    { name: 'Warm', class: 'bg-amber-50', color: '#fffbeb' },
+  ];
+  
   const steps: OptionConfig[] = [
     {
       title: "Center Part",
@@ -252,15 +268,37 @@ export default function Home() {
     
     loadTextures();
     return textureMap;
-  }, []);
-
-  const handlePrev = () => {
+  }, []);  const handlePrev = () => {
     if (showOverview) {
       // Close any open editing cards when leaving the overview
       setEditingCard(null);
       setShowOverview(false);
     } else if (step > 0) {
       setStep(step - 1);
+    }
+  };  // Function to reset camera to current step's view
+  const resetCameraView = () => {
+    const btn = document.querySelector('.reset-camera-btn');
+    
+    // Check if the button is in disabled state
+    if (btn && btn.getAttribute('data-disabled') === 'true') {
+      // If camera is already at the right position, do nothing
+      return;
+    }
+    
+    // Clear any editing card but keep the current step
+    setEditingCard(null);
+    // Increment the reset key to trigger smooth animation
+    setCameraResetKey(prev => prev + 1);
+    
+    // Add a small visual feedback on the button
+    if (btn) {
+      btn.classList.add('animate-pulse');
+      setTimeout(() => {
+        btn.classList.remove('animate-pulse');
+        // Mark as disabled when animation completes
+        btn.setAttribute('data-disabled', 'true');
+      }, 600);
     }
   };
 
@@ -589,7 +627,7 @@ export default function Home() {
                     
                     {/* Options when editing - prevent clicks from bubbling */}
                     {isEditing && (
-                      <div className="flex flex-col w-fit gap-3 mt-3 pt-3 border-t border-stone-100" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex flex-col w-fit max-w-[200px] gap-3 mt-3 pt-3 border-t border-stone-100" onClick={(e) => e.stopPropagation()}>
                         <div className="flex flex-wrap gap-2 justify-start">
                           {stepConfig.options.map((option) => (
                             <button
@@ -723,9 +761,11 @@ export default function Home() {
       </div>
     );
   };
-  
-  return (
-    <main className={`h-svh ${showOverview ? 'overflow-auto' : 'overflow-hidden'} md:overflow-auto md:h-auto md:min-h-svh bg-stone-200 relative`}>
+    return (
+    <main 
+      className={`h-svh ${showOverview ? 'overflow-auto' : 'overflow-hidden'} md:overflow-auto md:h-auto md:min-h-svh ${useCustomColor ? '' : backgroundColor} relative`}
+      style={useCustomColor ? { backgroundColor: customBackgroundColor } : {}}
+    >
       {/* Error notification at the top of the page - fixed for both mobile and desktop */}
       {showErrorMessage && (
         <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg transition-opacity z-50 flex items-center">
@@ -736,28 +776,100 @@ export default function Home() {
           </svg>
           Please select an option and color first
         </div>
-      )}
-      <div className="flex flex-col items-center w-full h-full">
-        <div 
-          className={`w-full relative md:fixed md:h-full bg-stone-200 z-0 cursor-grab active:cursor-grabbing transition-all duration-300 ease-in-out ${
+      )}      <div className="flex flex-col items-center w-full h-full">        <div 
+          className={`w-full relative md:fixed md:h-full ${useCustomColor ? '' : backgroundColor} z-0 cursor-grab active:cursor-grabbing transition-all duration-300 ease-in-out ${
             showOverview ? '' : 'flex-grow'
           }`}
-        >
-          <div className={`h-full  ${showOverview ? 'md:h-1/2' : 'md:h-3/4'}`}>
-          <ModelViewer
-            modelProps={{
-              modelPath: '/models/sonoir.glb',
-              materials: createMaterialsMap(),
-              useOnlyWithGrille: true,
-              highlightedPart: editingCard !== null ? steps[editingCard].partName : undefined
-            }}
-            cameraAngle={
-              editingCard !== null ? cameraAngles[editingCard] : 
-              showOverview ? [15.0, 20.0, 30.0] : 
-              cameraAngles[step]
-            }
-            onPositionUpdate={setCameraPosition}
-          />
+          style={useCustomColor ? { backgroundColor: customBackgroundColor } : {}}
+        ><div className={`h-full  ${showOverview ? 'md:h-1/2' : 'md:h-3/4'} relative`}>            <ModelViewer
+              modelProps={{
+                modelPath: '/models/sonoir.glb',
+                materials: createMaterialsMap(),
+                useOnlyWithGrille: true,
+                highlightedPart: editingCard !== null ? steps[editingCard].partName : undefined
+              }}
+              cameraAngle={
+                editingCard !== null ? cameraAngles[editingCard] : 
+                showOverview ? [15.0, 20.0, 30.0] : 
+                cameraAngles[step]
+              }
+              resetTrigger={cameraResetKey}onPositionUpdate={(position) => {
+                setCameraPosition(position);
+                
+                // Calculate the distance from current position to current step's camera angle
+                const currentPosition = new THREE.Vector3(position[0], position[1], position[2]);
+                
+                // Determine which camera angle should be the reference point
+                const currentAngleIndex = editingCard !== null ? editingCard : 
+                                         showOverview ? -1 : step;
+                
+                // Get the target position based on current context
+                const targetPosition = new THREE.Vector3(
+                  showOverview ? 15.0 * scaleFactor : cameraAngles[currentAngleIndex][0], 
+                  showOverview ? 20.0 * scaleFactor : cameraAngles[currentAngleIndex][1], 
+                  showOverview ? 30.0 * scaleFactor : cameraAngles[currentAngleIndex][2]
+                );
+                  // Track if camera has moved significantly from the current camera position
+                const distance = currentPosition.distanceTo(targetPosition);
+                // Always show the button, but we'll track if it's enabled or disabled
+                setShowResetButton(true);
+                // Pass the distance info to the button via data attribute
+                const btn = document.querySelector('.reset-camera-btn');
+                if (btn) {
+                  if (distance <= 5) {
+                    btn.setAttribute('data-disabled', 'true');
+                  } else {
+                    btn.setAttribute('data-disabled', 'false');
+                  }
+                }
+              }}
+            />            {/* Floating buttons container */}
+            <div className="absolute bottom-6 right-6 md:bottom-8 md:right-8 z-10 flex items-center gap-3">
+              {/* Background color button and menu */}
+              <div className="relative">
+                <button 
+                  className="bg-white bg-opacity-90 rounded-full p-3 shadow-lg transition-all duration-200 flex items-center justify-center hover:scale-105"
+                  onClick={() => setShowColorMenu(prev => !prev)}
+                  title="Change background color"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 2v8M4.93 10.93l1.41 1.41M2 18h2M20 18h2M19.07 10.93l-1.41 1.41M22 22H2M16 6l-4 4-4-4"/>
+                  </svg>
+                </button>
+                  {/* Color options dropdown - conditionally shown */}
+                {showColorMenu && (
+                  <div className="absolute bottom-full mb-2 right-0 bg-white p-4 rounded-lg shadow-lg transition-all duration-300 flex flex-col gap-3">
+                    {/* Color picker */}
+                    <div className="flex flex-col gap-2">
+                      <span className="text-sm font-medium text-gray-700">Custom Color</span>
+                      <HexColorPicker 
+                        color={customBackgroundColor} 
+                        onChange={(color) => {
+                          setCustomBackgroundColor(color);
+                          setUseCustomColor(true);
+                        }}
+                        className="w-full"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+                            
+              {/* Camera reset button - always visible but can be disabled */}
+              {showResetButton && (
+                <button 
+                  className="reset-camera-btn bg-white bg-opacity-90 rounded-full p-3 shadow-lg transition-all duration-200 flex items-center justify-center hover:scale-105"
+                  data-disabled="false"
+                  onClick={resetCameraView}
+                  title="Reset camera view"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M1 4v6h6"/>
+                    <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+                  </svg>
+                </button>
+              )}
+            </div>
           </div>
           
         </div>

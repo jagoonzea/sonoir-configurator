@@ -13,6 +13,7 @@ type ViewerProps = {
   };
   cameraAngle: [number, number, number];
   onPositionUpdate?: (position: [number, number, number]) => void;
+  resetTrigger?: number; // Trigger to force camera position reset
 };
 
 export type MaterialSelection = {
@@ -28,16 +29,17 @@ export type MaterialSelectionMap = {
 // Camera controller component to update camera position when props change
 const CameraController: React.FC<{
   position: [number, number, number],
-  onPositionUpdate?: (position: [number, number, number]) => void
-}> = ({ position, onPositionUpdate }) => {
-  const { camera, controls } = useThree();
+  onPositionUpdate?: (position: [number, number, number]) => void,
+  resetTrigger?: number
+}> = ({ position, onPositionUpdate, resetTrigger }) => {  const { camera, controls } = useThree();
   const positionRef = useRef(position);
   const isInitialRender = useRef(true);
   const isAnimating = useRef(false);
   const targetPosition = useRef(new THREE.Vector3());
   const startPosition = useRef(new THREE.Vector3());
   const startTime = useRef(0);
-  const animationDuration = 1000; // 1 second transition
+  const animationDuration = 1800; // 1.8 second transition for smoother feel
+  const resetTriggerRef = useRef(resetTrigger);
   
   // Prevent OrbitControls from overriding our camera position
   useEffect(() => {
@@ -103,19 +105,49 @@ const CameraController: React.FC<{
       }
     }
   }, [camera, position, controls]);
+    // Handle when reset trigger changes
+  useEffect(() => {
+    if (resetTrigger !== resetTriggerRef.current && !isInitialRender.current) {
+      // Store current and target positions
+      startPosition.current.set(
+        camera.position.x,
+        camera.position.y,
+        camera.position.z
+      );
+      targetPosition.current.set(position[0], position[1], position[2]);
+      
+      // Start animation
+      startTime.current = performance.now();
+      isAnimating.current = true;
+      resetTriggerRef.current = resetTrigger;
+      
+      // Reset orbit controls
+      if (controls) {
+        const orbitControls = controls as any;
+        if ('reset' in orbitControls) {
+          // Ensure controls will target the center after our animation completes
+          orbitControls.target.set(0, 0, 0);
+          orbitControls.update();
+        }
+      }
+    }
+  }, [resetTrigger, camera, controls, position]);
   
-  // Track camera position changes and handle animation
+    // Track camera position changes and handle animation
   useFrame(() => {
     // Handle animation
     if (isAnimating.current) {
       const elapsed = performance.now() - startTime.current;
       const progress = Math.min(elapsed / animationDuration, 1);
       
-      // Ease function - cubic ease-out for smoother deceleration
-      const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
-      const t = easeOutCubic(progress);
+      // Use a single smooth easing function for the entire animation
+      // This avoids the discontinuity between different easing functions      // Use a more refined easing function that slows down more gently at the end
+      const easeOutSine = (t: number) => Math.sin((t * Math.PI) / 2);
       
-      // Interpolate position
+      // Apply smooth easing to the entire animation curve
+      const t = easeOutSine(progress);
+      
+      // Interpolate position with smooth easing
       camera.position.lerpVectors(
         startPosition.current,
         targetPosition.current,
@@ -124,21 +156,20 @@ const CameraController: React.FC<{
       
       // Make sure camera looks at the center
       camera.lookAt(0, 0, 0);
-      
-      // End animation when complete
+        // End animation when complete, but avoid snapping
       if (progress >= 1) {
-        isAnimating.current = false;
+        // Only stop animation when we're extremely close to target (avoids visible snap)
+        const currentPos = new THREE.Vector3(camera.position.x, camera.position.y, camera.position.z);
+        const distance = currentPos.distanceTo(targetPosition.current);
         
-        // Force the final position exactly to avoid floating point errors
-        camera.position.set(
-          targetPosition.current.x,
-          targetPosition.current.y,
-          targetPosition.current.z
-        );
-        
-        // Re-enable controls after positioning is complete
-        if (controls && 'enabled' in controls) {
-          (controls as any).enabled = true;
+        // If we're very close to the target, end the animation
+        if (distance < 0.01) {
+          isAnimating.current = false;
+          
+          // Re-enable controls after positioning is complete
+          if (controls && 'enabled' in controls) {
+            (controls as any).enabled = true;
+          }
         }
       }
     }
@@ -265,7 +296,8 @@ const Model: React.FC<{
 const ModelViewer: React.FC<ViewerProps> = ({
   modelProps: { modelPath, materials, useOnlyWithGrille = true, highlightedPart },
   cameraAngle,
-  onPositionUpdate
+  onPositionUpdate,
+  resetTrigger
 }) => {
   // State to track if the viewport is desktop or mobile
   const [isDesktop, setIsDesktop] = React.useState(false);
@@ -285,10 +317,9 @@ const ModelViewer: React.FC<ViewerProps> = ({
     // Clean up
     return () => window.removeEventListener('resize', checkIfDesktop);
   }, []);
-
   return (
     <Canvas camera={{ fov: 60 }}>
-      <CameraController position={cameraAngle} onPositionUpdate={onPositionUpdate} />
+      <CameraController position={cameraAngle} onPositionUpdate={onPositionUpdate} resetTrigger={resetTrigger} />
       <ambientLight intensity={0.3} />
       <directionalLight 
         position={[10, 10, 5]} 
