@@ -781,7 +781,8 @@ export default function Home() {  // State for camera reset button
             showOverview ? '' : 'flex-grow'
           }`}
           style={useCustomColor ? { backgroundColor: customBackgroundColor } : {}}
-        ><div className={`h-full  ${showOverview ? 'md:h-1/2' : 'md:h-3/4'} relative`}>            <ModelViewer
+        ><div className={`h-full  ${showOverview ? 'md:h-1/2' : 'md:h-3/4'} relative`}>
+          <ModelViewer
               modelProps={{
                 modelPath: '/models/sonoir.glb',
                 materials: createMaterialsMap(),
