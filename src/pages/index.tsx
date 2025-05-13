@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import Image from 'next/image';
 import ModelViewer, { MaterialSelectionMap } from '@/components/ModelViewer';
 import * as THREE from 'three';
@@ -75,10 +75,11 @@ const COLOR_MAP: Record<string, string> = {
   'bg-transparent': 'transparent'
 };
 
-export default function Home() {  // State for camera reset button
+export default function Home() {    // State for camera reset button
   const [showResetButton, setShowResetButton] = useState(false);
   // Add a reset key that will change to force camera reset
-  const [cameraResetKey, setCameraResetKey] = useState(0);  // Background color states
+  const [cameraResetKey, setCameraResetKey] = useState(0);  
+  // Background color states
   const [backgroundColor, setBackgroundColor] = useState('bg-stone-200');
   const [customBackgroundColor, setCustomBackgroundColor] = useState('#e7e5e4');
   const [showColorMenu, setShowColorMenu] = useState(false);
@@ -268,7 +269,9 @@ export default function Home() {  // State for camera reset button
     
     loadTextures();
     return textureMap;
-  }, []);  const handlePrev = () => {
+  }, []);
+  
+  const handlePrev = () => {
     if (showOverview) {
       // Close any open editing cards when leaving the overview
       setEditingCard(null);
@@ -276,7 +279,7 @@ export default function Home() {  // State for camera reset button
     } else if (step > 0) {
       setStep(step - 1);
     }
-  };  // Function to reset camera to current step's view
+  };// Function to reset camera to current step's view
   const resetCameraView = () => {
     const btn = document.querySelector('.reset-camera-btn');
     
@@ -384,7 +387,7 @@ export default function Home() {  // State for camera reset button
   }, []);
 
   // Scale factor to move the camera further out while maintaining the same angles
-  const scaleFactor = isDesktop ? 1.2 : 1.0; // Only apply zoom-out on desktop
+  const scaleFactor = isDesktop ? 0.8 : 1; // Only apply zoom-out on desktop
 
   const cameraAngles: [number, number, number][] = [
     [44.49 * scaleFactor, 22.57 * scaleFactor, 25.79 * scaleFactor],
@@ -699,12 +702,11 @@ export default function Home() {  // State for camera reset button
                     <span className="text-4xl font-medium">{calculateTotalPrice().totalPrice.toFixed(2)}</span>
                   </div>
                 </div>
-              </div>
-              <button 
+              </div>              <button 
                 className="w-full py-2 px-3 bg-white text-black rounded-full hover:bg-amber-500 transition-colors text-md hover:cursor-pointer"
-                onClick={() => alert('Configuration finished! This is where you would integrate payment processing.')}
+                onClick={() => window.open('https://sonoir.be/feedback', '_blank')}
               >
-                Finish configuration
+                Give feedback
               </button>
             </div>
           </div>
@@ -755,6 +757,7 @@ export default function Home() {  // State for camera reset button
       </div>
     );
   };
+
     return (
     <main 
       className={`h-svh ${showOverview ? 'overflow-auto' : 'overflow-hidden'} md:overflow-auto md:h-auto md:min-h-svh ${useCustomColor ? '' : backgroundColor} relative`}
@@ -775,7 +778,7 @@ export default function Home() {  // State for camera reset button
             showOverview ? '' : 'flex-grow'
           }`}
           style={useCustomColor ? { backgroundColor: customBackgroundColor } : {}}
-        ><div className={`h-full  ${showOverview ? 'md:h-1/2' : 'md:h-3/4'} relative`}>
+        ><div className={`h-full  ${showOverview ? 'md:h-1/2' : 'md:h-full'} relative`}>
           <ModelViewer
               modelProps={{
                 modelPath: '/models/sonoir.glb',
@@ -929,8 +932,7 @@ export default function Home() {  // State for camera reset button
           >
             {renderSelectionOrOverview()}
           </div>
-        </div>
-      </div>
+        </div>      </div>
     </main>
   );
 }

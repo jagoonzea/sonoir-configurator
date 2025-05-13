@@ -346,7 +346,7 @@ const ModelViewer: React.FC<ViewerProps> = ({
         enableZoom={true}
         dampingFactor={0.05}
         enableDamping={true}
-        minDistance={isDesktop ? 40 : 20}
+        minDistance={isDesktop ? 25 : 20}
         maxDistance={100}
       />
     </Canvas>
