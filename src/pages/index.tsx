@@ -606,12 +606,10 @@ export default function Home() {  // State for camera reset button
                         </svg>
                       </div>
                     </div>
-                    
                     {/* Price display in large font */}
                     <div className="flex items-end gap-1 mb-2">
                     {stepConfig.prices[selection.option] == 0 ? (<span className="text-xl font-medium">Included</span>) : (<><span className="text-xl font-medium pb-[2px]">€</span><span className="text-3xl font-medium">{stepConfig.prices[selection.option]}</span></>)}
                     </div>
-
                     {/* Selected option display */}
                     <div className="flex items-center gap-4 pl-1">
                       <span className="text-stone-600 text-sm">{selection.option}</span>
@@ -622,9 +620,6 @@ export default function Home() {  // State for camera reset button
                         />
                       )}
                     </div>
-                    
-                    
-                    
                     {/* Options when editing - prevent clicks from bubbling */}
                     {isEditing && (
                       <div className="flex flex-col w-fit max-w-[200px] gap-3 mt-3 pt-3 border-t border-stone-100" onClick={(e) => e.stopPropagation()}>
@@ -716,7 +711,6 @@ export default function Home() {  // State for camera reset button
         </div>
       );
     }
-    
     // Regular selection menu (non-overview mode)
     return (
       <div className="flex flex-col p-6 gap-4">
@@ -776,7 +770,7 @@ export default function Home() {  // State for camera reset button
           </svg>
           Please select an option and color first
         </div>
-      )}      <div className="flex flex-col items-center w-full h-full">        <div 
+      )}      <div className="flex flex-col items-center w-full h-full"><div 
           className={`w-full relative md:fixed md:h-full ${useCustomColor ? '' : backgroundColor} z-0 cursor-grab active:cursor-grabbing transition-all duration-300 ease-in-out ${
             showOverview ? '' : 'flex-grow'
           }`}
@@ -872,9 +866,7 @@ export default function Home() {  // State for camera reset button
               )}
             </div>
           </div>
-          
         </div>
-
         {/* Bottom panel with dynamic height based on showOverview */}
         <div className={`w-full md:w-fit md:min-w-[550px] h-fit z-50 bottom-0 transition-all duration-300 ease-in-out bg-white md:rounded-3xl md:absolute ${
           showOverview ? 'md:top-[50svh]' : ' md:bottom-8'
@@ -892,7 +884,6 @@ export default function Home() {  // State for camera reset button
             ) : (
               <div className="w-6" />
             )}
-
             <div className="flex items-center gap-3">
               <h1 className="text-lg font-medium">{showOverview ? "Order Summary" : currentStep.title}</h1>
             </div>
@@ -928,14 +919,12 @@ export default function Home() {  // State for camera reset button
               />
             )}
           </div>
-
           <div className="w-full h-2 bg-stone-300">
             <div
               className="h-full bg-[#F7B932] transition-all duration-300"
               style={{ width: `${showOverview ? 100 : progressPercent}%` }}
             ></div>
           </div>
-
           <div className="mx-auto w-full" 
           >
             {renderSelectionOrOverview()}
