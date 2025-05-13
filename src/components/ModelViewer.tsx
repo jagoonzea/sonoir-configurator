@@ -218,6 +218,7 @@ const Model: React.FC<{
   highlightedPart?: string;
 }> = ({ modelPath, materials, useOnlyWithGrille = true, highlightedPart }) => {
   const gltf = useGLTF(modelPath);
+  gltf.scene.position.y = 4;
   const originalMaterials = useRef<Map<THREE.Mesh, THREE.Material>>(new Map());
   const meshesLogged = useRef<boolean>(false);
   const lastMaterials = useRef<string>('');
