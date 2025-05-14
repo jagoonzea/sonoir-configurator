@@ -78,18 +78,16 @@ const COLOR_MAP: Record<string, string> = {
 export default function Home() {    // State for camera reset button
   const [showResetButton, setShowResetButton] = useState(false);
   // Add a reset key that will change to force camera reset
-  const [cameraResetKey, setCameraResetKey] = useState(0);  
-  // Background color states
-  const [backgroundColor, setBackgroundColor] = useState('bg-stone-200');
-  const [customBackgroundColor, setCustomBackgroundColor] = useState('#e7e5e4');
-  const [showColorMenu, setShowColorMenu] = useState(false);
-  const [useCustomColor, setUseCustomColor] = useState(false);
+  const [cameraResetKey, setCameraResetKey] = useState(0);    // Environment settings
+  const [showEnvironmentMenu, setShowEnvironmentMenu] = useState(false);
+  const [selectedEnvironment, setSelectedEnvironment] = useState('');
   
-  // Available background color options
-  const backgroundColors = [
-    { name: 'Light', class: 'bg-stone-200', color: '#e7e5e4' },
-    { name: 'Dark', class: 'bg-slate-800', color: '#1e293b' },
-    { name: 'Warm', class: 'bg-amber-50', color: '#fffbeb' },
+  // Available environment options
+  const environmentOptions = [
+    { name: 'No Environment', path: '', thumbnail: '🚫' },
+    { name: 'Apartment', path: '/environments/appartement.hdr', thumbnail: '🏢' },
+    { name: 'Balcony', path: '/environments/balcony.hdr', thumbnail: '🌇' },
+    { name: 'Garden', path: '/environments/garden.hdr', thumbnail: '🌳' },
   ];
   
   const steps: OptionConfig[] = [
@@ -758,10 +756,8 @@ export default function Home() {    // State for camera reset button
     );
   };
 
-    return (
-    <main 
-      className={`h-svh ${showOverview ? 'overflow-auto' : 'overflow-hidden'} md:overflow-auto md:h-auto md:min-h-svh ${useCustomColor ? '' : backgroundColor} relative`}
-      style={useCustomColor ? { backgroundColor: customBackgroundColor } : {}}
+    return (    <main 
+      className={`h-svh ${showOverview ? 'overflow-auto' : 'overflow-hidden'} md:overflow-auto md:h-auto md:min-h-svh relative`}
     >
       {/* Error notification at the top of the page - fixed for both mobile and desktop */}
       {showErrorMessage && (
@@ -774,12 +770,10 @@ export default function Home() {    // State for camera reset button
           Please select an option and color first
         </div>
       )}      <div className="flex flex-col items-center w-full h-full"><div 
-          className={`w-full relative md:fixed md:h-full ${useCustomColor ? '' : backgroundColor} z-0 cursor-grab active:cursor-grabbing transition-all duration-300 ease-in-out ${
+          className={`w-full relative md:fixed md:h-full z-0 cursor-grab active:cursor-grabbing transition-all duration-300 ease-in-out ${
             showOverview ? '' : 'flex-grow'
           }`}
-          style={useCustomColor ? { backgroundColor: customBackgroundColor } : {}}
-        ><div className={`h-full  ${showOverview ? 'md:h-1/2' : 'md:h-full'} relative`}>
-          <ModelViewer
+        ><div className={`h-full  ${showOverview ? 'md:h-1/2' : 'md:h-full'} relative`}>          <ModelViewer
               modelProps={{
                 modelPath: '/models/sonoir.glb',
                 materials: createMaterialsMap(),
@@ -791,6 +785,7 @@ export default function Home() {    // State for camera reset button
                 showOverview ? [15.0, 20.0, 30.0] : 
                 cameraAngles[step]
               }
+              environment={selectedEnvironment}
               resetTrigger={cameraResetKey}onPositionUpdate={(position) => {
                 setCameraPosition(position);
                 
@@ -822,32 +817,44 @@ export default function Home() {    // State for camera reset button
                 }
               }}
             />            {/* Floating buttons container */}
-            <div className="absolute bottom-6 right-6 md:bottom-8 md:right-8 z-10 flex items-center gap-3">
-              {/* Background color button and menu */}
+            <div className="absolute bottom-6 right-6 md:bottom-8 md:right-8 z-10 flex items-center gap-3">              {/* Environment button and menu */}
               <div className="relative">
                 <button 
                   className="bg-white bg-opacity-90 rounded-full p-3 shadow-lg transition-all duration-200 flex items-center justify-center hover:scale-105"
-                  onClick={() => setShowColorMenu(prev => !prev)}
-                  title="Change background color"
+                  onClick={() => setShowEnvironmentMenu(prev => !prev)}
+                  title="Change environment"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 2v8M4.93 10.93l1.41 1.41M2 18h2M20 18h2M19.07 10.93l-1.41 1.41M22 22H2M16 6l-4 4-4-4"/>
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M12 2a7 7 0 1 0 0 14 7 7 0 1 0 0-14"></path>
+                    <path d="M12 6a2 2 0 1 0 0 4 2 2 0 1 0 0-4"></path>
                   </svg>
                 </button>
-                  {/* Color options dropdown - conditionally shown */}
-                {showColorMenu && (
+                {/* Environment options dropdown - conditionally shown */}
+                {showEnvironmentMenu && (
                   <div className="absolute bottom-full mb-2 right-0 bg-white p-4 rounded-lg shadow-lg transition-all duration-300 flex flex-col gap-3">
-                    {/* Color picker */}
+                    {/* Environment selector */}
                     <div className="flex flex-col gap-2">
-                      <span className="text-sm font-medium text-gray-700">Custom Color</span>
-                      <HexColorPicker 
-                        color={customBackgroundColor} 
-                        onChange={(color) => {
-                          setCustomBackgroundColor(color);
-                          setUseCustomColor(true);
-                        }}
-                        className="w-full"
-                      />
+                      <span className="text-sm font-medium text-gray-700">Environment</span>
+                      <div className="flex flex-col gap-2 min-w-[200px]">
+                        {environmentOptions.map((env) => (
+                          <button
+                            key={env.path}
+                            onClick={() => {
+                              setSelectedEnvironment(env.path);
+                              setShowEnvironmentMenu(false);
+                            }}
+                            className={`flex items-center gap-2 px-3 py-2 rounded-md transition-all duration-200 ${
+                              selectedEnvironment === env.path 
+                                ? 'bg-stone-100 font-medium' 
+                                : 'hover:bg-stone-50'
+                            }`}
+                          >
+                            <span className="text-xl">{env.thumbnail}</span>
+                            <span>{env.name}</span>
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 )}

@@ -14,6 +14,7 @@ type ViewerProps = {
   cameraAngle: [number, number, number];
   onPositionUpdate?: (position: [number, number, number]) => void;
   resetTrigger?: number; // Trigger to force camera position reset
+  environment?: string; // Path to HDR environment map
 };
 
 export type MaterialSelection = {
@@ -297,8 +298,8 @@ const Model: React.FC<{
 const ModelViewer: React.FC<ViewerProps> = ({
   modelProps: { modelPath, materials, useOnlyWithGrille = true, highlightedPart },
   cameraAngle,
-  onPositionUpdate,
-  resetTrigger
+  onPositionUpdate,  resetTrigger,
+  environment = '' // No environment by default
 }) => {
   // State to track if the viewport is desktop or mobile
   const [isDesktop, setIsDesktop] = React.useState(false);
@@ -317,23 +318,27 @@ const ModelViewer: React.FC<ViewerProps> = ({
     
     // Clean up
     return () => window.removeEventListener('resize', checkIfDesktop);
-  }, []);
-  return (
-    <Canvas camera={{ fov: 60 }}>
-      <CameraController position={cameraAngle} onPositionUpdate={onPositionUpdate} resetTrigger={resetTrigger} />
-      <ambientLight intensity={0.3} />
+  }, []);  return (
+    <Canvas camera={{ fov: 60 }} gl={{ toneMappingExposure: 1.2 }}>
+      <CameraController position={cameraAngle} onPositionUpdate={onPositionUpdate} resetTrigger={resetTrigger} />      <color attach="background" args={['#e7e5e4']} /> {/* stone-200 color always visible when no environment background */}
+      {/* Lighting adjusted based on whether environment is being used */}
+      <ambientLight intensity={0.5} />
       <directionalLight 
         position={[10, 10, 5]} 
-        intensity={0.6} 
+        intensity={0.8} 
         castShadow
         shadow-mapSize={[1024, 1024]}
-      />
-      <directionalLight 
+      />      <directionalLight 
         position={[-5, 5, -2]} 
-        intensity={0.3} 
+        intensity={0.4} 
         color="#b0c4de" 
       />
-      <Environment preset="warehouse" />
+      <Environment 
+        files={environment || '/environments/appartement.hdr'} 
+        background={environment ? true : false} 
+        resolution={1024}
+        blur={0}
+      />
       <Model 
         modelPath={modelPath} 
         materials={materials} 
