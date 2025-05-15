@@ -268,8 +268,7 @@ export default function Home() {    // State for camera reset button
     loadTextures();
     return textureMap;
   }, []);
-  
-  const handlePrev = () => {
+    const handlePrev = () => {
     if (showOverview) {
       // Close any open editing cards when leaving the overview
       setEditingCard(null);
@@ -313,10 +312,11 @@ export default function Home() {    // State for camera reset button
     if (currentSelection.option && (currentSelection.color || currentStepConfig.noColorNeeded)) {
       if (step < totalSteps - 1) {
         setStep(step + 1);
-        setShowErrorMessage(false);
-      } else if ( step === totalSteps - 1 && !showOverview) {
+        setShowErrorMessage(false);      } else if ( step === totalSteps - 1 && !showOverview) {
         // Show overview when completing last step
         setShowOverview(true);
+        // Clear environment when entering overview
+        setSelectedEnvironment('');
         setShowErrorMessage(false);
       }
     } else {
@@ -564,14 +564,13 @@ export default function Home() {    // State for camera reset button
       totalPrice
     };
   };
-
   const renderSelectionOrOverview = () => {
     if (showOverview) {
       return (
         <div className="flex flex-col h-full">
           {/* Scrollable cards container with flex-grow */}
-          <div className="flex-1 overflow-y-auto pb-4 px-4 md:px-6 max-h-none">
-            <div className="grid grid-cols-2 gap-3 pt-4 items-start">
+          <div className="flex-1 overflow-y-auto pb-4 px-4 lg:px-6 max-h-[calc(100vh_-_406px)]" style={{scrollbarWidth: 'none'}}>
+            <div className="grid grid-cols-2 lg:grid-cols-1 gap-3 pt-4 items-start">
               {steps.map((stepConfig, idx) => {
                 const selection = selections[idx];
                 if (!selection.option) return null;
@@ -580,10 +579,9 @@ export default function Home() {    // State for camera reset button
                 
                 // Different card style based on the image provided
                 return (
-                  <div 
-                    key={idx} 
+                  <div                    key={idx} 
                     className={`bg-white rounded-2xl border border-stone-200 p-4 flex flex-col transition-all duration-300 h-auto justify-between self-start min-h-[130px] ${
-                      isEditing ? 'shadow-lg border-amber-400' : 'hover:shadow-md'
+                      isEditing ? 'shadow-lg border-amber-400' : 'hover:shadow-md hover:border-amber-200'
                     } cursor-pointer`}
                     onClick={() => handleCardClick(idx)}
                   >
@@ -675,7 +673,7 @@ export default function Home() {    // State for camera reset button
           </div>
           
           {/* Fixed footer with pricing that doesn't scroll */}
-          <div className="flex-shrink-0 px-4 md:px-6 pb-4 pt-2 border-t border-stone-100">            
+          <div className="flex-shrink-0 px-4 lg:px-6 pb-4 pt-2 border-t border-stone-100">            
             <div className="mt-4 w-full bg-black rounded-2xl p-4 text-white">
               <div className="flex flex-col gap-1">
                 <div className="flex justify-between items-baseline mb-1">
@@ -754,10 +752,8 @@ export default function Home() {    // State for camera reset button
         </div>
       </div>
     );
-  };
-
-    return (    <main 
-      className={`h-svh ${showOverview ? 'overflow-auto' : 'overflow-hidden'} md:overflow-auto md:h-auto md:min-h-svh relative`}
+  };    return (    <main 
+      className={`h-svh ${showOverview ? 'overflow-auto bg-stone-200' : 'overflow-hidden'} lg:overflow-auto lg:h-auto lg:min-h-svh relative`}
     >
       {/* Error notification at the top of the page - fixed for both mobile and desktop */}
       {showErrorMessage && (
@@ -768,25 +764,24 @@ export default function Home() {    // State for camera reset button
             <line x1="12" y1="16" x2="12.01" y2="16"></line>
           </svg>
           Please select an option and color first
-        </div>
-      )}      <div className="flex flex-col items-center w-full h-full"><div 
-          className={`w-full relative md:fixed md:h-full z-0 cursor-grab active:cursor-grabbing transition-all duration-300 ease-in-out ${
-            showOverview ? '' : 'flex-grow'
+        </div>      )}      <div className="flex flex-col items-center w-full h-full"><div 
+          className={`w-full relative lg:fixed lg:h-full z-0 cursor-grab active:cursor-grabbing transition-all duration-300 ease-in-out ${
+            showOverview ? 'lg:right-[430px] lg:left-0 lg:w-[calc(100%_-_430px)]' : 'flex-grow'
           }`}
-        ><div className={`h-full  ${showOverview ? 'md:h-1/2' : 'md:h-full'} relative`}>          <ModelViewer
+        ><div className={`h-full relative ${showOverview ? 'bg-white' : ''}`}>          <ModelViewer
               modelProps={{
                 modelPath: '/models/sonoir.glb',
                 materials: createMaterialsMap(),
                 useOnlyWithGrille: true,
                 highlightedPart: editingCard !== null ? steps[editingCard].partName : undefined
-              }}
-              cameraAngle={
+              }}              cameraAngle={
                 editingCard !== null ? cameraAngles[editingCard] : 
-                showOverview ? [15.0, 20.0, 30.0] : 
+                showOverview ? [20.0, 30.0, 20.0] : 
                 cameraAngles[step]
               }
               environment={selectedEnvironment}
-              resetTrigger={cameraResetKey}onPositionUpdate={(position) => {
+              resetTrigger={cameraResetKey}
+              onPositionUpdate={(position) => {
                 setCameraPosition(position);
                 
                 // Calculate the distance from current position to current step's camera angle
@@ -794,18 +789,21 @@ export default function Home() {    // State for camera reset button
                 
                 // Determine which camera angle should be the reference point
                 const currentAngleIndex = editingCard !== null ? editingCard : 
-                                         showOverview ? -1 : step;
+                                        showOverview ? -1 : step;
                 
                 // Get the target position based on current context
                 const targetPosition = new THREE.Vector3(
-                  showOverview ? 15.0 * scaleFactor : cameraAngles[currentAngleIndex][0], 
-                  showOverview ? 20.0 * scaleFactor : cameraAngles[currentAngleIndex][1], 
-                  showOverview ? 30.0 * scaleFactor : cameraAngles[currentAngleIndex][2]
+                  showOverview ? 20.0 * scaleFactor : cameraAngles[currentAngleIndex][0], 
+                  showOverview ? 30.0 * scaleFactor : cameraAngles[currentAngleIndex][1], 
+                  showOverview ? 20.0 * scaleFactor : cameraAngles[currentAngleIndex][2]
                 );
-                  // Track if camera has moved significantly from the current camera position
+                
+                // Track if camera has moved significantly from the current camera position
                 const distance = currentPosition.distanceTo(targetPosition);
+                
                 // Always show the button, but we'll track if it's enabled or disabled
                 setShowResetButton(true);
+                
                 // Pass the distance info to the button via data attribute
                 const btn = document.querySelector('.reset-camera-btn');
                 if (btn) {
@@ -816,49 +814,50 @@ export default function Home() {    // State for camera reset button
                   }
                 }
               }}
-            />            {/* Floating buttons container */}
-            <div className="absolute bottom-6 right-6 md:bottom-8 md:right-8 z-10 flex items-center gap-3">              {/* Environment button and menu */}
-              <div className="relative">
-                <button 
-                  className="bg-white bg-opacity-90 rounded-full p-3 shadow-lg transition-all duration-200 flex items-center justify-center hover:scale-105"
-                  onClick={() => setShowEnvironmentMenu(prev => !prev)}
-                  title="Change environment"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <path d="M12 2a7 7 0 1 0 0 14 7 7 0 1 0 0-14"></path>
-                    <path d="M12 6a2 2 0 1 0 0 4 2 2 0 1 0 0-4"></path>
-                  </svg>
-                </button>
-                {/* Environment options dropdown - conditionally shown */}
-                {showEnvironmentMenu && (
-                  <div className="absolute bottom-full mb-2 right-0 bg-white p-4 rounded-lg shadow-lg transition-all duration-300 flex flex-col gap-3">
-                    {/* Environment selector */}
-                    <div className="flex flex-col gap-2">
-                      <span className="text-sm font-medium text-gray-700">Environment</span>
-                      <div className="flex flex-col gap-2 min-w-[200px]">
-                        {environmentOptions.map((env) => (
-                          <button
-                            key={env.path}
-                            onClick={() => {
-                              setSelectedEnvironment(env.path);
-                              setShowEnvironmentMenu(false);
-                            }}
-                            className={`flex items-center gap-2 px-3 py-2 rounded-md transition-all duration-200 ${
-                              selectedEnvironment === env.path 
-                                ? 'bg-stone-100 font-medium' 
-                                : 'hover:bg-stone-50'
-                            }`}
-                          >
-                            <span className="text-xl">{env.thumbnail}</span>
-                            <span>{env.name}</span>
-                          </button>
-                        ))}
+            />            {/* Floating buttons container */}            <div className="absolute bottom-6 right-6 lg:bottom-8 lg:right-8 z-10 flex items-center gap-3">              {/* Environment button and menu - only shown when not in overview */}
+              {!showOverview && (
+                <div className="relative">
+                  <button 
+                    className="bg-white bg-opacity-90 rounded-full p-3 shadow-lg transition-all duration-200 flex items-center justify-center hover:scale-105"
+                    onClick={() => setShowEnvironmentMenu(prev => !prev)}
+                    title="Change environment"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <path d="M12 2a7 7 0 1 0 0 14 7 7 0 1 0 0-14"></path>
+                      <path d="M12 6a2 2 0 1 0 0 4 2 2 0 1 0 0-4"></path>
+                    </svg>
+                  </button>
+                  {/* Environment options dropdown - conditionally shown */}
+                  {showEnvironmentMenu && (
+                    <div className="absolute bottom-full mb-2 right-0 bg-white p-4 rounded-lg shadow-lg transition-all duration-300 flex flex-col gap-3">
+                      {/* Environment selector */}
+                      <div className="flex flex-col gap-2">
+                        <span className="text-sm font-medium text-gray-700">Environment</span>
+                        <div className="flex flex-col gap-2 min-w-[200px]">
+                          {environmentOptions.map((env) => (
+                            <button
+                              key={env.path}
+                              onClick={() => {
+                                setSelectedEnvironment(env.path);
+                                setShowEnvironmentMenu(false);
+                              }}
+                              className={`flex items-center gap-2 px-3 py-2 rounded-md transition-all duration-200 ${
+                                selectedEnvironment === env.path 
+                                  ? 'bg-stone-100 font-medium' 
+                                  : 'hover:bg-stone-50'
+                              }`}
+                            >
+                              <span className="text-xl">{env.thumbnail}</span>
+                              <span>{env.name}</span>
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              )}
                             
               {/* Camera reset button - always visible but can be disabled */}
               {showResetButton && (
@@ -876,10 +875,9 @@ export default function Home() {    // State for camera reset button
               )}
             </div>
           </div>
-        </div>
-        {/* Bottom panel with dynamic height based on showOverview */}
-        <div className={`w-full md:w-fit md:min-w-[550px] h-fit z-50 bottom-0 transition-all duration-300 ease-in-out bg-white md:rounded-3xl md:absolute ${
-          showOverview ? 'md:top-[50svh]' : ' md:bottom-8'
+        </div>        {/* Bottom panel with dynamic positioning based on showOverview */}
+        <div className={`w-full lg:w-fit lg:min-w-[520px] h-fit z-50 bottom-0 transition-all duration-300 ease-in-out bg-white lg:rounded-3xl lg:absolute lg:shadow-xl ${
+          showOverview ? 'lg:right-8 lg:top-8 lg:bottom-8 lg:h-[calc(100vh_-_64px)] lg:border lg:border-stone-200' : 'lg:bottom-8'
         }`}>
           <div className="flex justify-between items-center w-full p-4 px-6 max-w-[600px] mx-auto">
             {(step > 0 || showOverview) ? (
@@ -895,7 +893,7 @@ export default function Home() {    // State for camera reset button
               <div className="w-6" />
             )}
             <div className="flex items-center gap-3">
-              <h1 className="text-lg font-medium">{showOverview ? "Order Summary" : currentStep.title}</h1>
+              <h1 className="text-lg font-medium">{showOverview ? "Configure & Order" : currentStep.title}</h1>
             </div>
 
             {showOverview ? (
