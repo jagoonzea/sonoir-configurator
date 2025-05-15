@@ -569,7 +569,7 @@ export default function Home() {    // State for camera reset button
       return (
         <div className="flex flex-col h-full">
           {/* Scrollable cards container with flex-grow */}
-          <div className="flex-1 overflow-y-auto pb-4 px-4 lg:px-6 max-h-[calc(100vh_-_406px)]" style={{scrollbarWidth: 'none'}}>
+          <div className="flex-1 overflow-y-auto pb-4 px-4 lg:px-6 lg:max-h-[calc(100vh_-_406px)]">
             <div className="grid grid-cols-2 lg:grid-cols-1 gap-3 pt-4 items-start">
               {steps.map((stepConfig, idx) => {
                 const selection = selections[idx];
