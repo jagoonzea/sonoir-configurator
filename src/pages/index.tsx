@@ -373,7 +373,7 @@ export default function Home() {    // State for camera reset button
 
   // Save configuration function
   const handleShareConfig = () => {
-    const shareableLink = createShareableLink(selections, selectedEnvironment);
+    const shareableLink = createShareableLink(selections);
     
     // Copy to clipboard
     navigator.clipboard.writeText(shareableLink)
@@ -415,14 +415,9 @@ export default function Home() {    // State for camera reset button
       try {
         const result = decodeConfig(configCode);
         
-        if (result && result.selections.length === steps.length) {
+        if (result && result.selections && result.selections.length === steps.length) {
           // Apply the selections from the configuration
           setSelections(result.selections);
-          
-          // Set environment if it was stored
-          if (result.environment) {
-            setSelectedEnvironment(result.environment);
-          }
           
           // Show the overview to display the loaded configuration
           setShowOverview(true);
