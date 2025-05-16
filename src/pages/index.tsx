@@ -5,6 +5,7 @@ import Image from 'next/image';
 import ModelViewer, { MaterialSelectionMap } from '@/components/ModelViewer';
 import * as THREE from 'three';
 import { HexColorPicker } from 'react-colorful';
+import { encodeConfig, decodeConfig, createShareableLink, getConfigFromUrl } from '@/utils/configUtils';
 
 type OptionConfig = {
   title: string;
@@ -177,7 +178,6 @@ export default function Home() {    // State for camera reset button
       noColorNeeded: true
     }
   ];
-
   const totalSteps = steps.length;
   const [step, setStep] = useState(0);
   const [selections, setSelections] = useState(steps.map(() => ({ option: '', color: '' })));
@@ -185,6 +185,14 @@ export default function Home() {    // State for camera reset button
   const [texturesLoaded, setTexturesLoaded] = useState(false);
   const [showOverview, setShowOverview] = useState(false);
   const [editingCard, setEditingCard] = useState<number | null>(null);
+  // Configuration sharing state
+  const [showShareNotification, setShowShareNotification] = useState(false);
+  
+  // Remove the old load configuration state variables
+  // const [savedConfig, setSavedConfig] = useState<string>('');
+  // const [showLoadModal, setShowLoadModal] = useState(false);
+  // const [configToLoad, setConfigToLoad] = useState('');
+  // const [configError, setConfigError] = useState('');
   
   const currentStep = steps[step];
   const currentSelection = selections[step];
@@ -363,6 +371,21 @@ export default function Home() {    // State for camera reset button
     setSelections(updated);
   };
 
+  // Save configuration function
+  const handleShareConfig = () => {
+    const shareableLink = createShareableLink(selections, selectedEnvironment);
+    
+    // Copy to clipboard
+    navigator.clipboard.writeText(shareableLink)
+      .then(() => {
+        setShowShareNotification(true);
+        setTimeout(() => setShowShareNotification(false), 3000);
+      })
+      .catch(err => {
+        console.error('Could not copy shareable link: ', err);
+      });
+  };  // This function has been replaced by the automatic URL configuration loading
+
   const progressPercent = ((step + 1) / totalSteps) * 100;
 
   // State to track if the viewport is desktop or mobile
@@ -383,6 +406,32 @@ export default function Home() {    // State for camera reset button
     // Clean up
     return () => window.removeEventListener('resize', checkIfDesktop);
   }, []);
+
+  // Load configuration from URL on page load
+  useEffect(() => {
+    const configCode = getConfigFromUrl();
+    
+    if (configCode) {
+      try {
+        const result = decodeConfig(configCode);
+        
+        if (result && result.selections.length === steps.length) {
+          // Apply the selections from the configuration
+          setSelections(result.selections);
+          
+          // Set environment if it was stored
+          if (result.environment) {
+            setSelectedEnvironment(result.environment);
+          }
+          
+          // Show the overview to display the loaded configuration
+          setShowOverview(true);
+        }
+      } catch (error) {
+        console.error('Error loading configuration from URL:', error);
+      }
+    }
+  }, [steps.length]);
 
   // Scale factor to move the camera further out while maintaining the same angles
   const scaleFactor = isDesktop ? 0.9 : 1; // Only apply zoom-out on desktop
@@ -697,13 +746,42 @@ export default function Home() {    // State for camera reset button
                     <span className="text-2xl">€</span>
                     <span className="text-4xl font-medium">{calculateTotalPrice().totalPrice.toFixed(2)}</span>
                   </div>
+                </div>              </div>
+              <div className="flex gap-2 items-center">
+                {/* Share button as circular icon */}                <div className="relative">
+                  <button 
+                    className="bg-amber-500 p-3 rounded-full hover:bg-amber-600 transition-all duration-200 flex items-center justify-center hover:scale-105"
+                    onClick={handleShareConfig}
+                    title="Share configuration"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+                      <polyline points="16 6 12 2 8 6"></polyline>
+                      <line x1="12" y1="2" x2="12" y2="15"></line>
+                    </svg>
+                  </button>
+                  
+                  {/* Share notification */}
+                  {showShareNotification && (
+                    <div className="absolute bottom-full mb-2 right-0 bg-white px-4 py-3 rounded-lg shadow-lg transition-all duration-300 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                        Shareable link copied!
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>              <button 
-                className="w-full py-2 px-3 bg-white text-black rounded-full hover:bg-amber-500 transition-colors text-md hover:cursor-pointer"
-                onClick={() => window.open('https://sonoir.be/feedback', '_blank')}
-              >
-                Give feedback
-              </button>
+                
+                {/* Feedback button taking remaining width */}
+                <button 
+                  className="flex-grow py-2 px-3 bg-white text-black rounded-full hover:bg-gray-100 transition-colors text-md hover:cursor-pointer"
+                  onClick={() => window.open('https://sonoir.be/feedback', '_blank')}
+                >
+                  Give feedback
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -767,8 +845,7 @@ export default function Home() {    // State for camera reset button
         </div>      )}      <div className="flex flex-col items-center w-full h-full"><div 
           className={`w-full relative lg:fixed lg:h-full z-0 cursor-grab active:cursor-grabbing transition-all duration-300 ease-in-out ${
             showOverview ? 'lg:right-[430px] lg:left-0 lg:w-[calc(100%_-_430px)]' : 'flex-grow'
-          }`}
-        ><div className={`h-full relative ${showOverview ? 'bg-white' : ''}`}>          <ModelViewer
+          }`}        ><div className={`h-full relative ${showOverview ? 'bg-white' : ''}`}>          <ModelViewer
               modelProps={{
                 modelPath: '/models/sonoir.glb',
                 materials: createMaterialsMap(),
@@ -813,8 +890,11 @@ export default function Home() {    // State for camera reset button
                     btn.setAttribute('data-disabled', 'false');
                   }
                 }
-              }}
-            />            {/* Floating buttons container */}            <div className="absolute bottom-6 right-6 lg:bottom-8 lg:right-8 z-10 flex items-center gap-3">              {/* Environment button and menu - only shown when not in overview */}
+              }}            />            {/* Floating buttons container - position changes in overview mode on desktop */}            <div className={`absolute bottom-6 right-6 lg:bottom-8 z-10 flex items-center gap-3 ${
+              showOverview ? 'lg:right-[450px]' : 'lg:right-8'
+            }`}>              {/* Share button has been moved to the overview panel */}
+
+              {/* Environment button and menu - only shown when not in overview */}
               {!showOverview && (
                 <div className="relative">
                   <button 
@@ -858,9 +938,8 @@ export default function Home() {    // State for camera reset button
                   )}
                 </div>
               )}
-                            
-              {/* Camera reset button - always visible but can be disabled */}
-              {showResetButton && (
+                              {/* Camera reset button - visible when not in overview */}
+              {showResetButton && !showOverview && (
                 <button 
                   className="reset-camera-btn bg-white bg-opacity-90 rounded-full p-3 shadow-lg transition-all duration-200 flex items-center justify-center hover:scale-105"
                   data-disabled="false"
@@ -932,12 +1011,13 @@ export default function Home() {    // State for camera reset button
               className="h-full bg-[#F7B932] transition-all duration-300"
               style={{ width: `${showOverview ? 100 : progressPercent}%` }}
             ></div>
-          </div>
-          <div className="mx-auto w-full" 
+          </div>          <div className="mx-auto w-full" 
           >
             {renderSelectionOrOverview()}
           </div>
-        </div>      </div>
+        </div>
+          {/* Share Modal has been removed and replaced with URL-based configuration */}
+      </div>
     </main>
   );
 }
