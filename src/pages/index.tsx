@@ -826,7 +826,7 @@ export default function Home() {    // State for camera reset button
       </div>
     );
   };    return (    <main 
-      className={`h-svh ${showOverview ? 'overflow-auto bg-stone-200' : 'overflow-hidden'} lg:overflow-auto lg:h-auto lg:min-h-svh relative`}
+      className={`h-svh ${showOverview ? 'overflow-auto bg-stone-200' : 'overflow-hidden'} lg:overflow-auto lg:min-h-svh relative`}
     >
       {/* Error notification at the top of the page - fixed for both mobile and desktop */}
       {showErrorMessage && (
@@ -838,9 +838,11 @@ export default function Home() {    // State for camera reset button
           </svg>
           Please select an option and color first
         </div>      )}      <div className="flex flex-col items-center w-full h-full"><div 
-          className={`w-full relative lg:fixed lg:h-full z-0 cursor-grab active:cursor-grabbing transition-all duration-300 ease-in-out ${
-            showOverview ? 'lg:right-[430px] lg:left-0 lg:w-[calc(100%_-_430px)]' : 'flex-grow'
-          }`}        ><div className={`h-full relative ${showOverview ? 'bg-white' : ''}`}>          <ModelViewer
+          className={`w-full relative z-0 cursor-grab active:cursor-grabbing transition-all duration-300 ease-in-out ${
+            showOverview
+              ? ' lg:fixed lg:h-full lg:right-[430px] lg:left-0 lg:w-[calc(100%_-_430px)]'
+              : 'flex-grow'
+          }`}        ><div className={`h-full relative ${showOverview ? 'bg-white h-[50vh]! lg:h-full!' : ''}`}>          <ModelViewer
               modelProps={{
                 modelPath: '/models/sonoir.glb',
                 materials: createMaterialsMap(),
@@ -953,7 +955,7 @@ export default function Home() {    // State for camera reset button
         <div className={`w-full lg:w-fit lg:min-w-[520px] h-fit z-50 bottom-0 transition-all duration-300 ease-in-out bg-white lg:rounded-3xl lg:absolute lg:shadow-xl ${
           showOverview ? 'lg:right-8 lg:top-8 lg:bottom-8 lg:h-[calc(100vh_-_64px)] lg:border lg:border-stone-200' : 'lg:bottom-8'
         }`}>
-          <div className="flex justify-between items-center w-full p-4 px-6 max-w-[600px] mx-auto">
+          <div className="flex justify-between items-center w-full p-4 px-6 mx-auto">
             {(step > 0 || showOverview) ? (
               <Image
                 src="/arrowleft.svg"
