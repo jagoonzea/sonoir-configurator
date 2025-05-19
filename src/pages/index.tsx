@@ -665,7 +665,7 @@ export default function Home() {    // State for camera reset button
                     </div>
                     {/* Options when editing - prevent clicks from bubbling */}
                     {isEditing && (
-                      <div className="flex flex-col w-fit max-w-[200px] gap-3 mt-3 pt-3 border-t border-stone-100" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex flex-col w-fit max-w-[300px] gap-3 mt-3 pt-3 border-t border-stone-100" onClick={(e) => e.stopPropagation()}>
                         <div className="flex flex-wrap gap-2 justify-start">
                           {stepConfig.options.map((option) => (
                             <button
@@ -688,7 +688,7 @@ export default function Home() {    // State for camera reset button
                         </div>
                         
                         {!stepConfig.noColorNeeded && optionColors.length > 0 && (
-                          <div className="flex flex-wrap gap-2 mt-2 max-w-[200px]">
+                          <div className="flex flex-wrap gap-2 mt-2">
                             {optionColors.map((color) => (
                               <button
                                 key={color}
