@@ -826,8 +826,7 @@ export default function Home() {    // State for camera reset button
     );
   };    return (    <main 
       className={`h-svh ${showOverview ? 'overflow-auto bg-stone-200' : 'overflow-hidden'} lg:overflow-auto lg:min-h-svh relative`}
-    >
-      {/* Error notification at the top of the page - fixed for both mobile and desktop */}
+    >      {/* Error notification at the top of the page - fixed for both mobile and desktop */}
       {showErrorMessage && (
         <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg transition-opacity z-50 flex items-center">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
@@ -836,7 +835,21 @@ export default function Home() {    // State for camera reset button
             <line x1="12" y1="16" x2="12.01" y2="16"></line>
           </svg>
           Please select an option and color first
-        </div>      )}      <div className="flex flex-col items-center w-full h-full"><div 
+        </div>      )}
+        
+      {/* Mobile back button - always visible on mobile and tablet, hidden on desktop */}
+      <button 
+        onClick={() => window.open('https://sonoir.be', '_self')}
+        className="fixed top-4 left-4 z-50 bg-white bg-opacity-90 rounded-full p-3 shadow-lg transition-all duration-200 lg:hidden flex items-center justify-center hover:scale-105"
+        aria-label="Return to Sonoir website"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M19 12H5"></path>
+          <path d="M12 19l-7-7 7-7"></path>
+        </svg>
+      </button>
+
+      <div className="flex flex-col items-center w-full h-full"><div 
           className={`w-full relative z-0 cursor-grab active:cursor-grabbing transition-all duration-300 ease-in-out ${
             showOverview
               ? ' lg:fixed lg:h-full lg:right-[430px] lg:left-0 lg:w-[calc(100%_-_430px)]'
