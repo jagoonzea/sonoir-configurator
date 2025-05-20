@@ -221,22 +221,16 @@ const Model: React.FC<{
   const gltf = useGLTF(modelPath);
   gltf.scene.position.y = 4;
   const originalMaterials = useRef<Map<THREE.Mesh, THREE.Material>>(new Map());
-  const meshesLogged = useRef<boolean>(false);
   const lastMaterials = useRef<string>('');
   
   // Store original materials on first render and log mesh names once
   useEffect(() => {
     if (originalMaterials.current.size === 0) {
-      console.log('Mesh names in model:');
       gltf.scene.traverse((child: any) => {
         if (child.isMesh) {
           originalMaterials.current.set(child, child.material);
-          if (!meshesLogged.current) {
-            console.log(`- ${child.name}`);
-          }
         }
       });
-      meshesLogged.current = true;
     }
   }, [gltf]);
   
