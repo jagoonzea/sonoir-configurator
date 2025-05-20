@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
-import { OrbitControls, useGLTF, Environment } from '@react-three/drei';
+import { OrbitControls, useGLTF, Environment, useProgress } from '@react-three/drei';
 import * as THREE from 'three';
 
 // Updated types to support multiple materials
@@ -289,6 +289,35 @@ const Model: React.FC<{
   return <primitive object={gltf.scene} />;
 };
 
+// Loading overlay component to display for 2s minimum when the component loads
+const LoadingOverlay = () => {
+  const { progress } = useProgress();
+  
+  return (
+    <div className="absolute inset-0 bg-black bg-opacity-50 flex flex-col items-center justify-center z-50">
+      <div className="mb-3">
+        <svg width="38" height="38" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg" stroke="#fff">
+          <g fill="none" fillRule="evenodd">
+            <g transform="translate(1 1)" strokeWidth="2">
+              <circle strokeOpacity=".5" cx="18" cy="18" r="18"/>
+              <path d="M36 18c0-9.94-8.06-18-18-18">
+                <animateTransform
+                  attributeName="transform"
+                  type="rotate"
+                  from="0 18 18"
+                  to="360 18 18"
+                  dur="1s"
+                  repeatCount="indefinite"/>
+              </path>
+            </g>
+          </g>
+        </svg>
+      </div>
+      <div className="text-white font-bold text-lg">{Math.round(progress)}%</div>
+    </div>
+  );
+};
+
 const ModelViewer: React.FC<ViewerProps> = ({
   modelProps: { modelPath, materials, useOnlyWithGrille = true, highlightedPart },
   cameraAngle,
@@ -297,7 +326,13 @@ const ModelViewer: React.FC<ViewerProps> = ({
 }) => {
   // State to track if the viewport is desktop or mobile
   const [isDesktop, setIsDesktop] = React.useState(false);
-
+  // State to track environment changes to trigger loading overlay
+  const [showEnvironmentLoading, setShowEnvironmentLoading] = React.useState(true);
+  // Track which environments have been loaded already
+  const loadedEnvironments = React.useRef(new Set<string>());
+  // Track if this is the first load
+  const isInitialLoad = React.useRef(true);
+  
   // Check if the viewport is desktop on mount and when window resizes
   React.useEffect(() => {
     const checkIfDesktop = () => {
@@ -312,44 +347,86 @@ const ModelViewer: React.FC<ViewerProps> = ({
     
     // Clean up
     return () => window.removeEventListener('resize', checkIfDesktop);
-  }, []);  return (
-    <Canvas camera={{ fov: 60 }} gl={{ toneMappingExposure: 1.2 }}>
-      <CameraController position={cameraAngle} onPositionUpdate={onPositionUpdate} resetTrigger={resetTrigger} />      <color attach="background" args={['#e7e5e4']} /> {/* stone-200 color always visible when no environment background */}
-      {/* Lighting adjusted based on whether environment is being used */}
-      <ambientLight intensity={0.5} />
-      <directionalLight 
-        position={[10, 10, 5]} 
-        intensity={0.8} 
-        castShadow
-        shadow-mapSize={[1024, 1024]}
-      />      <directionalLight 
-        position={[-5, 5, -2]} 
-        intensity={0.4} 
-        color="#b0c4de" 
-      />
-      <Environment 
-        files={environment || '/environments/appartement.hdr'} 
-        background={environment ? true : false} 
-        resolution={1024}
-        blur={0}
-      />
-      <Model 
-        modelPath={modelPath} 
-        materials={materials} 
-        useOnlyWithGrille={useOnlyWithGrille}
-        highlightedPart={highlightedPart}
-      />
-      <OrbitControls 
-        makeDefault
-        enablePan={false}
-        enableRotate={true}
-        enableZoom={true}
-        dampingFactor={0.05}
-        enableDamping={true}
-        minDistance={isDesktop ? 25 : 20}
-        maxDistance={100}
-      />
-    </Canvas>
+  }, []);
+  
+  // Show loading overlay on initial load and when selecting a new environment for the first time
+  React.useEffect(() => {
+    // Always show loading on initial load
+    if (isInitialLoad.current) {
+      isInitialLoad.current = false;
+      
+      // Add initial environment to the set
+      if (environment) {
+        loadedEnvironments.current.add(environment);
+      }
+      
+      // Hide overlay after 2 seconds
+      const timer = setTimeout(() => {
+        setShowEnvironmentLoading(false);
+      }, 2000);
+      
+      return () => clearTimeout(timer);
+    }
+    
+    // Show loading when switching to a new environment for the first time
+    if (environment && !loadedEnvironments.current.has(environment)) {
+      setShowEnvironmentLoading(true);
+      
+      // Add this environment to the set of loaded environments
+      loadedEnvironments.current.add(environment);
+      
+      // Hide overlay after 2 seconds
+      const timer = setTimeout(() => {
+        setShowEnvironmentLoading(false);
+      }, 2000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [environment]);
+  
+  return (
+    <div className="relative w-full h-full">
+      <Canvas camera={{ fov: 60 }} gl={{ toneMappingExposure: 1.2 }}>
+        <CameraController position={cameraAngle} onPositionUpdate={onPositionUpdate} resetTrigger={resetTrigger} />      
+        <color attach="background" args={['#e7e5e4']} /> {/* stone-200 color always visible when no environment background */}
+        {/* Lighting adjusted based on whether environment is being used */}
+        <ambientLight intensity={0.5} />
+        <directionalLight 
+          position={[10, 10, 5]} 
+          intensity={0.8} 
+          castShadow
+          shadow-mapSize={[1024, 1024]}
+        />      
+        <directionalLight 
+          position={[-5, 5, -2]} 
+          intensity={0.4} 
+          color="#b0c4de" 
+        />
+        <Environment 
+          files={environment || '/environments/appartement.hdr'} 
+          background={environment ? true : false} 
+          resolution={1024}
+          blur={0}
+        />
+        <Model 
+          modelPath={modelPath} 
+          materials={materials} 
+          useOnlyWithGrille={useOnlyWithGrille}
+          highlightedPart={highlightedPart}
+        />
+        <OrbitControls 
+          makeDefault
+          enablePan={false}
+          enableRotate={true}
+          enableZoom={true}
+          dampingFactor={0.05}
+          enableDamping={true}
+          minDistance={isDesktop ? 25 : 20}
+          maxDistance={100}
+        />
+      </Canvas>
+      {showEnvironmentLoading && <LoadingOverlay />}
+    </div>
   );
 };
 
