@@ -336,6 +336,19 @@ const getEnvironmentPath = (environment: string, isDesktop: boolean): string => 
   return environment;
 };
 
+// Custom Environment wrapper component to handle environment switching with proper cleanup
+const EnvironmentWrapper = ({ files, ...props }: { files: string, [key: string]: any }) => {
+  // Use a key to force recreation of the Environment component when files change
+  // This ensures proper disposal of previous environment textures
+  return (
+    <Environment
+      key={`env-${files}`} // Force recreation on file change
+      files={files}
+      {...props}
+    />
+  );
+};
+
 const ModelViewer: React.FC<ViewerProps> = ({
   modelProps: { modelPath, materials, useOnlyWithGrille = true, highlightedPart },
   cameraAngle,
@@ -366,10 +379,13 @@ const ModelViewer: React.FC<ViewerProps> = ({
     // Clean up
     return () => window.removeEventListener('resize', checkIfDesktop);
   }, []);
-    // Show loading overlay on initial load and when selecting a new environment for the first time
+  // Show loading overlay on initial load and when selecting a new environment for the first time
   React.useEffect(() => {
     // Get the actual environment path being used based on device
     const currentEnvironmentPath = getEnvironmentPath(environment, isDesktop);
+    
+    // Always show loading when changing environments (prevents visual glitches during transitions)
+    setShowEnvironmentLoading(true);
     
     // Always show loading on initial load
     if (isInitialLoad.current) {
@@ -379,31 +395,31 @@ const ModelViewer: React.FC<ViewerProps> = ({
       if (currentEnvironmentPath) {
         loadedEnvironments.current.add(currentEnvironmentPath);
       }
-      
-      // Hide overlay after 2 seconds
-      const timer = setTimeout(() => {
-        setShowEnvironmentLoading(false);
-      }, 2000);
-      
-      return () => clearTimeout(timer);
     }
     
-    // Show loading when switching to a new environment for the first time
-    if (currentEnvironmentPath && !loadedEnvironments.current.has(currentEnvironmentPath)) {
-      setShowEnvironmentLoading(true);
-      
-      // Add this environment to the set of loaded environments
-      loadedEnvironments.current.add(currentEnvironmentPath);
-      
-      // Hide overlay after 2 seconds
-      const timer = setTimeout(() => {
-        setShowEnvironmentLoading(false);
-      }, 2000);
-      
-      return () => clearTimeout(timer);
+    // Clear the loaded environments set if it gets too large (prevents memory leaks)
+    if (loadedEnvironments.current.size > 10) {
+      loadedEnvironments.current.clear();
+      if (currentEnvironmentPath) {
+        loadedEnvironments.current.add(currentEnvironmentPath);
+      }
     }
+    
+    // If this is a new environment, add it to the set
+    if (currentEnvironmentPath && !loadedEnvironments.current.has(currentEnvironmentPath)) {
+      loadedEnvironments.current.add(currentEnvironmentPath);
+    }
+    
+    // Hide overlay after a slight delay
+    const timer = setTimeout(() => {
+      setShowEnvironmentLoading(false);
+    }, 2000);
+    
+    return () => clearTimeout(timer);
   }, [environment, isDesktop]);
-  
+    // Get current environment path
+  const currentEnvPath = getEnvironmentPath(environment, isDesktop);
+
   return (
     <div className="relative w-full h-full">
       <Canvas camera={{ fov: 60 }} gl={{ toneMappingExposure: 1.2 }}>
@@ -416,15 +432,17 @@ const ModelViewer: React.FC<ViewerProps> = ({
           intensity={0.8} 
           castShadow
           shadow-mapSize={[1024, 1024]}
-        />      
-        <directionalLight 
+        />        <directionalLight 
           position={[-5, 5, -2]} 
           intensity={0.4} 
           color="#b0c4de" 
-        />        <Environment 
-          files={getEnvironmentPath(environment, isDesktop)} 
+        />
+        {/* Use key to force recreation of Environment when changing files */}
+        <Environment 
+          key={currentEnvPath} 
+          files={currentEnvPath} 
           background={environment ? true : false} 
-          resolution={1024}
+          resolution={isDesktop ? 1024 : 512}
           blur={0}
         />
         <Model 
