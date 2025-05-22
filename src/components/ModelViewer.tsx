@@ -487,48 +487,40 @@ const ModelViewer: React.FC<ViewerProps> = ({
     return () => window.removeEventListener('resize', checkIfDesktop);
   }, []);  // Enhanced memory management for environment loading with explicit cleanup
   React.useEffect(() => {
-    // Get the actual environment path being used based on device
-    const currentEnvironmentPath = getEnvironmentPath(environment, isDesktop);
-    
     // Always show loading when changing environments (prevents visual glitches during transitions)
-    // and gives time for memory cleanup
     setShowEnvironmentLoading(true);
     
     // Clear THREE.js cache to prevent texture memory leaks
     THREE.Cache.clear();
     
+    // Calculate the environment path each time based on the current state
+    const envPath = getEnvironmentPath(environment, isDesktop);
+      
     // On initial load
     if (isInitialLoad.current) {
       isInitialLoad.current = false;
       
-      // Add initial environment to the set
-      if (currentEnvironmentPath) {
-        // Limit to just one environment in memory on mobile
-        if (!isDesktop) loadedEnvironments.current.clear();
-        loadedEnvironments.current.add(currentEnvironmentPath);
-      }
+      // Limit to just one environment in memory on mobile
+      if (!isDesktop) loadedEnvironments.current.clear();
+      loadedEnvironments.current.add(envPath);
     }
     
     // Much more aggressive memory management on mobile
     if (!isDesktop) {
       // On mobile, only keep track of the current environment
       loadedEnvironments.current.clear();
-      if (currentEnvironmentPath) {
-        loadedEnvironments.current.add(currentEnvironmentPath);
-      }
+      loadedEnvironments.current.add(envPath);
     } else {
       // On desktop, limit to 5 environments
       if (loadedEnvironments.current.size > 5) {
         loadedEnvironments.current.clear();
-        if (currentEnvironmentPath) {
-          loadedEnvironments.current.add(currentEnvironmentPath);
-        }
+        loadedEnvironments.current.add(envPath);
       }
     }
     
     // If this is a new environment, add it to the set
-    if (currentEnvironmentPath && !loadedEnvironments.current.has(currentEnvironmentPath)) {
-      loadedEnvironments.current.add(currentEnvironmentPath);
+    if (!loadedEnvironments.current.has(envPath)) {
+      loadedEnvironments.current.add(envPath);
     }
     
     // Hide overlay after a slight delay - longer on mobile to ensure proper loading
@@ -549,8 +541,7 @@ const ModelViewer: React.FC<ViewerProps> = ({
         }
       }
     };
-  }, [environment, isDesktop]);    // Get current environment path
-  const currentEnvPath = getEnvironmentPath(environment, isDesktop);
+  }, [environment, isDesktop]);
   const [envError, setEnvError] = useState(false);
   
   // Error handling for environment loading
@@ -590,27 +581,26 @@ const ModelViewer: React.FC<ViewerProps> = ({
           position={[-5, 5, -2]} 
           intensity={0.5} 
           color="#b0c4de" 
-        />
-          {/* Use error boundary and suspense for environment loading */}
+        />          {/* Always load appartement environment for lighting, but only show as background when requested */}
         <Suspense fallback={null}>
-          {!isDesktop && environment ? (
+          {!isDesktop ? (
             <EnvironmentWrapper
-              files={currentEnvPath}
+              files={getEnvironmentPath(environment, false)}
               background={false} // Never use as background on mobile - use simpler lighting
-              isDesktop={isDesktop}
+              isDesktop={false}
               resolution={256} // Very low res for mobile
               blur={1} // Add blur to hide compression artifacts
               onError={handleEnvError}
             />
-          ) : environment ? (
-            <EnvironmentWrapper 
-              files={currentEnvPath}
-              background={environment ? true : false} 
-              isDesktop={isDesktop}
-              resolution={isDesktop ? 1024 : 256}
+          ) : (            <EnvironmentWrapper 
+              files={getEnvironmentPath(environment, true)}
+              background={environment ? true : false} // Only show as background when environment is explicitly selected
+              isDesktop={true}
+              resolution={1024}
               blur={0}
+              onError={handleEnvError}
             />
-          ) : null}
+          )}
         </Suspense>
         <Model
           modelPath={modelPath} 
