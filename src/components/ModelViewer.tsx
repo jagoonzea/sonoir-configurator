@@ -217,9 +217,10 @@ const Model: React.FC<{
   materials: MaterialSelectionMap;
   useOnlyWithGrille?: boolean;
   highlightedPart?: string;
-}> = ({ modelPath, materials, useOnlyWithGrille = true, highlightedPart }) => {
+  isDesktop?: boolean; 
+}> = ({ modelPath, materials, useOnlyWithGrille = true, highlightedPart, isDesktop }) => {
   const gltf = useGLTF(modelPath);
-  gltf.scene.position.y = 4;
+  gltf.scene.position.y = isDesktop ? 8 : 3;
   const originalMaterials = useRef<Map<THREE.Mesh, THREE.Material>>(new Map());
   const lastMaterials = useRef<string>('');
   
@@ -413,6 +414,7 @@ const ModelViewer: React.FC<ViewerProps> = ({
           materials={materials} 
           useOnlyWithGrille={useOnlyWithGrille}
           highlightedPart={highlightedPart}
+          isDesktop={isDesktop}
         />
         <OrbitControls 
           makeDefault

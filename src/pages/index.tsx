@@ -436,11 +436,11 @@ export default function Home() {    // State for camera reset button
     [44.01 * scaleFactor, 18.35 * scaleFactor, -29.68 * scaleFactor],  
     [0.57 * scaleFactor, 48.29 * scaleFactor, 28.66 * scaleFactor],  
     [29.51 * scaleFactor, -18.23 * scaleFactor, 16.27 * scaleFactor], 
-    [0.21 * scaleFactor, 12.97 * scaleFactor, 46.42 * scaleFactor],
-    [35.4 * scaleFactor, -1.13 * scaleFactor, 0.99 * scaleFactor],
-    [2.78 * scaleFactor, -15.08 * scaleFactor, -30.95 * scaleFactor],
-    [15.0 * scaleFactor, 25.0 * scaleFactor, 35.0 * scaleFactor],     // Battery view
-    [15.0 * scaleFactor, 25.0 * scaleFactor, 35.0 * scaleFactor]       // Speaker quality view
+    [2.3 * scaleFactor, 20 * scaleFactor, 52 * scaleFactor],
+    [34 * scaleFactor, 13 * scaleFactor, 0.99 * scaleFactor],
+    [24 * scaleFactor, 4 * scaleFactor, -20 * scaleFactor],
+    [15.0 * scaleFactor, 25.0 * scaleFactor, 35.0 * scaleFactor],
+    [-22 * scaleFactor, 25.0 * scaleFactor, 35.0 * scaleFactor]
   ];
   
   useEffect(() => {
@@ -854,7 +854,8 @@ export default function Home() {    // State for camera reset button
             showOverview
               ? ' lg:fixed lg:h-full lg:right-[430px] lg:left-0 lg:w-[calc(100%_-_430px)]'
               : 'flex-grow'
-          }`}        ><div className={`h-full relative ${showOverview ? 'bg-white h-[50vh]! lg:h-full!' : ''}`}>          <ModelViewer
+          }`}        ><div className={`h-full relative ${showOverview ? 'bg-white h-[50vh]! lg:h-full!' : ''}`}>
+            <ModelViewer
               modelProps={{
                 modelPath: '/models/sonoir.glb',
                 materials: createMaterialsMap(),
