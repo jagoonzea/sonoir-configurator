@@ -1,7 +1,8 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState, useCallback, Suspense } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls, useGLTF, Environment, useProgress } from '@react-three/drei';
 import * as THREE from 'three';
+import { useLoader } from '@react-three/fiber';
 
 // Updated types to support multiple materials
 type ViewerProps = {
@@ -219,10 +220,32 @@ const Model: React.FC<{
   highlightedPart?: string;
   isDesktop?: boolean; 
 }> = ({ modelPath, materials, useOnlyWithGrille = true, highlightedPart, isDesktop }) => {
-  const gltf = useGLTF(modelPath);
+  // Set a low detail level for the model on mobile
+  const gltf = useGLTF(modelPath, true, isDesktop ? false : true); // Use draco on mobile for better performance
   gltf.scene.position.y = isDesktop ? 8 : 3;
   const originalMaterials = useRef<Map<THREE.Mesh, THREE.Material>>(new Map());
   const lastMaterials = useRef<string>('');
+  
+  // Cleanup function to dispose of materials and geometries when component unmounts
+  useEffect(() => {
+    return () => {
+      // Cleanup materials and geometries when the model changes or unmounts
+      gltf.scene.traverse((child: any) => {
+        if (child.isMesh) {
+          if (child.geometry) {
+            child.geometry.dispose();
+          }
+          if (child.material) {
+            if (Array.isArray(child.material)) {
+              child.material.forEach((material: THREE.Material) => material.dispose());
+            } else {
+              child.material.dispose();
+            }
+          }
+        }
+      });
+    };
+  }, [gltf]);
   
   // Store original materials on first render and log mesh names once
   useEffect(() => {
@@ -234,8 +257,7 @@ const Model: React.FC<{
       });
     }
   }, [gltf]);
-  
-  // Apply materials based on part names and handle mesh visibility
+    // Apply materials based on part names and handle mesh visibility - with memory management
   useEffect(() => {
     // Convert materials to string for comparison to prevent infinite loops
     const materialsString = JSON.stringify(
@@ -250,6 +272,20 @@ const Model: React.FC<{
     if (materialsString === lastMaterials.current) {
       return;
     }
+    
+    // Store old materials for disposal
+    const oldMaterials: THREE.Material[] = [];
+    
+    // First traverse to collect old materials for disposal
+    gltf.scene.traverse((child: any) => {
+      if (child.isMesh && child.material && !originalMaterials.current.has(child)) {
+        if (Array.isArray(child.material)) {
+          child.material.forEach((mat: THREE.Material) => oldMaterials.push(mat));
+        } else {
+          oldMaterials.push(child.material);
+        }
+      }
+    });
     
     lastMaterials.current = materialsString;
     
@@ -282,10 +318,23 @@ const Model: React.FC<{
             child.material = newMaterial;
             break;
           }
-        }
-      }
+        }      }
     });
-  }, [materials, gltf, useOnlyWithGrille, highlightedPart]);
+    
+    // Dispose of old materials after we've applied the new ones
+    setTimeout(() => {
+      oldMaterials.forEach(material => {
+        if (material && material.dispose) {
+          material.dispose();
+        }
+      });
+      
+      // Force texture cleanup
+      if (!isDesktop) {
+        THREE.Cache.clear();
+      }
+    }, 100);
+  }, [materials, gltf, useOnlyWithGrille, highlightedPart, isDesktop]);
 
   return <primitive object={gltf.scene} />;
 };
@@ -321,32 +370,87 @@ const LoadingOverlay = () => {
 
 // Helper function to determine the correct environment path based on device
 const getEnvironmentPath = (environment: string, isDesktop: boolean): string => {
+  // Use no environment on mobile if memory is a concern
   if (!environment) {
     return isDesktop ? '/environments/appartement.hdr' : '/environments/appartement_small.jpg';
   }
   
   // If a specific environment is requested, use the _small version for mobile with jpg extension
   if (!isDesktop) {
-    // Get the base name without extension
-    const baseName = environment.split('/').pop()?.split('.')[0];
-    // For mobile, use the _small.jpg version
-    return `/environments/${baseName}_small.jpg`;
+    try {
+      // Get the base name without extension
+      const baseName = environment.split('/').pop()?.split('.')[0];
+      // For mobile, use the _small.jpg version which is much smaller
+      return `/environments/${baseName}_small.jpg`;
+    } catch (error) {
+      // Fallback if there's any error
+      return '/environments/appartement_small.jpg';
+    }
   }
   
   return environment;
 };
 
-// Custom Environment wrapper component to handle environment switching with proper cleanup
-const EnvironmentWrapper = ({ files, ...props }: { files: string, [key: string]: any }) => {
-  // Use a key to force recreation of the Environment component when files change
-  // This ensures proper disposal of previous environment textures
+// Custom Environment wrapper component to handle environment switching and memory management
+const EnvironmentWrapper = ({ files, isDesktop, ...props }: { files: string, isDesktop: boolean, [key: string]: any }) => {
+  const [textureKey, setTextureKey] = useState(`env-${files}`);
+  
+  // Memory management
+  useEffect(() => {
+    // Force recreation when files change by updating key
+    setTextureKey(`env-${files}-${Date.now()}`);
+    
+    // Create cleanup function that runs when component unmounts or before rerender with new props
+    return () => {
+      // Force garbage collection of textures when component unmounts or changes
+      if (window.gc) {
+        try {
+          window.gc();
+        } catch (e) {
+          console.log('GC not available');
+        }
+      }
+      
+      // Manually dispose of any textures in the cache
+      THREE.Cache.clear();
+    };
+  }, [files]);
+  
   return (
     <Environment
-      key={`env-${files}`} // Force recreation on file change
+      key={textureKey} // Force recreation on file change or manual refresh
       files={files}
+      preset={isDesktop ? undefined : 'apartment'} // Use preset on mobile as fallback
+      resolution={isDesktop ? 1024 : 256} // Much lower res for mobile
       {...props}
     />
   );
+};
+
+// Mobile memory management utility
+const useMobileMemoryManagement = (isDesktop: boolean) => {
+  useEffect(() => {
+    if (isDesktop) return;
+
+    // Setup interval to clear memory cache on mobile
+    const cleanupInterval = setInterval(() => {
+      THREE.Cache.clear();
+      
+      // Try to force garbage collection when available
+      if (window.gc) {
+        try {
+          window.gc();
+        } catch (e) {
+          // GC not available in this browser
+        }
+      }
+    }, 30000); // Every 30 seconds
+    
+    return () => {
+      clearInterval(cleanupInterval);
+      THREE.Cache.clear();
+    };
+  }, [isDesktop]);
 };
 
 const ModelViewer: React.FC<ViewerProps> = ({
@@ -356,13 +460,16 @@ const ModelViewer: React.FC<ViewerProps> = ({
   environment = '' // No environment by default
 }) => {
   // State to track if the viewport is desktop or mobile
-  const [isDesktop, setIsDesktop] = React.useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
   // State to track environment changes to trigger loading overlay
-  const [showEnvironmentLoading, setShowEnvironmentLoading] = React.useState(true);
+  const [showEnvironmentLoading, setShowEnvironmentLoading] = useState(true);
   // Track which environments have been loaded already
-  const loadedEnvironments = React.useRef(new Set<string>());
+  const loadedEnvironments = useRef(new Set<string>());
   // Track if this is the first load
-  const isInitialLoad = React.useRef(true);
+  const isInitialLoad = useRef(true);
+  
+  // Apply memory management for mobile devices
+  useMobileMemoryManagement(isDesktop);
   
   // Check if the viewport is desktop on mount and when window resizes
   React.useEffect(() => {
@@ -378,30 +485,44 @@ const ModelViewer: React.FC<ViewerProps> = ({
     
     // Clean up
     return () => window.removeEventListener('resize', checkIfDesktop);
-  }, []);
-  // Show loading overlay on initial load and when selecting a new environment for the first time
+  }, []);  // Enhanced memory management for environment loading with explicit cleanup
   React.useEffect(() => {
     // Get the actual environment path being used based on device
     const currentEnvironmentPath = getEnvironmentPath(environment, isDesktop);
     
     // Always show loading when changing environments (prevents visual glitches during transitions)
+    // and gives time for memory cleanup
     setShowEnvironmentLoading(true);
     
-    // Always show loading on initial load
+    // Clear THREE.js cache to prevent texture memory leaks
+    THREE.Cache.clear();
+    
+    // On initial load
     if (isInitialLoad.current) {
       isInitialLoad.current = false;
       
       // Add initial environment to the set
       if (currentEnvironmentPath) {
+        // Limit to just one environment in memory on mobile
+        if (!isDesktop) loadedEnvironments.current.clear();
         loadedEnvironments.current.add(currentEnvironmentPath);
       }
     }
     
-    // Clear the loaded environments set if it gets too large (prevents memory leaks)
-    if (loadedEnvironments.current.size > 10) {
+    // Much more aggressive memory management on mobile
+    if (!isDesktop) {
+      // On mobile, only keep track of the current environment
       loadedEnvironments.current.clear();
       if (currentEnvironmentPath) {
         loadedEnvironments.current.add(currentEnvironmentPath);
+      }
+    } else {
+      // On desktop, limit to 5 environments
+      if (loadedEnvironments.current.size > 5) {
+        loadedEnvironments.current.clear();
+        if (currentEnvironmentPath) {
+          loadedEnvironments.current.add(currentEnvironmentPath);
+        }
       }
     }
     
@@ -410,42 +531,88 @@ const ModelViewer: React.FC<ViewerProps> = ({
       loadedEnvironments.current.add(currentEnvironmentPath);
     }
     
-    // Hide overlay after a slight delay
+    // Hide overlay after a slight delay - longer on mobile to ensure proper loading
     const timer = setTimeout(() => {
       setShowEnvironmentLoading(false);
-    }, 2000);
+    }, isDesktop ? 1500 : 2500);
     
-    return () => clearTimeout(timer);
-  }, [environment, isDesktop]);
-    // Get current environment path
+    // Cleanup function runs when environment changes or component unmounts
+    return () => {
+      clearTimeout(timer);
+      
+      // Force garbage collection if available
+      if (!isDesktop && window.gc) {
+        try {
+          window.gc();
+        } catch (e) {
+          console.log('GC not available');
+        }
+      }
+    };
+  }, [environment, isDesktop]);    // Get current environment path
   const currentEnvPath = getEnvironmentPath(environment, isDesktop);
+  const [envError, setEnvError] = useState(false);
+  
+  // Error handling for environment loading
+  const handleEnvError = useCallback(() => {
+    console.log("Environment loading error, using fallback lighting");
+    setEnvError(true);
+  }, []);
 
   return (
     <div className="relative w-full h-full">
-      <Canvas camera={{ fov: 60 }} gl={{ toneMappingExposure: 1.2 }}>
-        <CameraController position={cameraAngle} onPositionUpdate={onPositionUpdate} resetTrigger={resetTrigger} />      
+      <Canvas 
+        camera={{ fov: 60 }} 
+        gl={{ 
+          toneMappingExposure: 1.2,
+          // Add memory management settings for WebGL context
+          powerPreference: 'high-performance',
+          antialias: isDesktop, // Disable antialiasing on mobile
+          precision: isDesktop ? 'highp' : 'mediump', // Lower precision on mobile
+        }}
+        // Optimize for performance on mobile
+        frameloop={isDesktop ? 'always' : 'demand'} 
+        performance={{ min: 0.5 }}
+        dpr={isDesktop ? [1, 2] : [0.7, 1]} // Lower resolution on mobile
+      >
+        <CameraController position={cameraAngle} onPositionUpdate={onPositionUpdate} resetTrigger={resetTrigger} />
         <color attach="background" args={['#e7e5e4']} /> {/* stone-200 color always visible when no environment background */}
-        {/* Lighting adjusted based on whether environment is being used */}
-        <ambientLight intensity={0.5} />
+        
+        {/* Enhanced lighting for mobile devices or when environment fails */}
+        <ambientLight intensity={0.6} />
         <directionalLight 
           position={[10, 10, 5]} 
           intensity={0.8} 
-          castShadow
-          shadow-mapSize={[1024, 1024]}
-        />        <directionalLight 
+          castShadow={isDesktop}
+          shadow-mapSize={isDesktop ? [1024, 1024] : [256, 256]}
+        />
+        <directionalLight 
           position={[-5, 5, -2]} 
-          intensity={0.4} 
+          intensity={0.5} 
           color="#b0c4de" 
         />
-        {/* Use key to force recreation of Environment when changing files */}
-        <Environment 
-          key={currentEnvPath} 
-          files={currentEnvPath} 
-          background={environment ? true : false} 
-          resolution={isDesktop ? 1024 : 512}
-          blur={0}
-        />
-        <Model 
+          {/* Use error boundary and suspense for environment loading */}
+        <Suspense fallback={null}>
+          {!isDesktop && environment ? (
+            <EnvironmentWrapper
+              files={currentEnvPath}
+              background={false} // Never use as background on mobile - use simpler lighting
+              isDesktop={isDesktop}
+              resolution={256} // Very low res for mobile
+              blur={1} // Add blur to hide compression artifacts
+              onError={handleEnvError}
+            />
+          ) : environment ? (
+            <EnvironmentWrapper 
+              files={currentEnvPath}
+              background={environment ? true : false} 
+              isDesktop={isDesktop}
+              resolution={isDesktop ? 1024 : 256}
+              blur={0}
+            />
+          ) : null}
+        </Suspense>
+        <Model
           modelPath={modelPath} 
           materials={materials} 
           useOnlyWithGrille={useOnlyWithGrille}
