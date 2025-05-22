@@ -319,6 +319,25 @@ const LoadingOverlay = () => {
   );
 };
 
+// Helper function to determine the correct environment path based on device
+const getEnvironmentPath = (environment: string, isDesktop: boolean): string => {
+  if (!environment) {
+    return isDesktop ? '/environments/appartement.hdr' : '/environments/appartement_small.hdr';
+  }
+  
+  // If a specific environment is requested, use the _small version for mobile
+  if (!isDesktop) {
+    // Insert _small before the file extension
+    const parts = environment.split('.');
+    if (parts.length > 1) {
+      const ext = parts.pop();
+      return `${parts.join('.')}_small.${ext}`;
+    }
+  }
+  
+  return environment;
+};
+
 const ModelViewer: React.FC<ViewerProps> = ({
   modelProps: { modelPath, materials, useOnlyWithGrille = true, highlightedPart },
   cameraAngle,
@@ -349,16 +368,18 @@ const ModelViewer: React.FC<ViewerProps> = ({
     // Clean up
     return () => window.removeEventListener('resize', checkIfDesktop);
   }, []);
-  
-  // Show loading overlay on initial load and when selecting a new environment for the first time
+    // Show loading overlay on initial load and when selecting a new environment for the first time
   React.useEffect(() => {
+    // Get the actual environment path being used based on device
+    const currentEnvironmentPath = getEnvironmentPath(environment, isDesktop);
+    
     // Always show loading on initial load
     if (isInitialLoad.current) {
       isInitialLoad.current = false;
       
       // Add initial environment to the set
-      if (environment) {
-        loadedEnvironments.current.add(environment);
+      if (currentEnvironmentPath) {
+        loadedEnvironments.current.add(currentEnvironmentPath);
       }
       
       // Hide overlay after 2 seconds
@@ -370,11 +391,11 @@ const ModelViewer: React.FC<ViewerProps> = ({
     }
     
     // Show loading when switching to a new environment for the first time
-    if (environment && !loadedEnvironments.current.has(environment)) {
+    if (currentEnvironmentPath && !loadedEnvironments.current.has(currentEnvironmentPath)) {
       setShowEnvironmentLoading(true);
       
       // Add this environment to the set of loaded environments
-      loadedEnvironments.current.add(environment);
+      loadedEnvironments.current.add(currentEnvironmentPath);
       
       // Hide overlay after 2 seconds
       const timer = setTimeout(() => {
@@ -383,7 +404,7 @@ const ModelViewer: React.FC<ViewerProps> = ({
       
       return () => clearTimeout(timer);
     }
-  }, [environment]);
+  }, [environment, isDesktop]);
   
   return (
     <div className="relative w-full h-full">
@@ -402,9 +423,8 @@ const ModelViewer: React.FC<ViewerProps> = ({
           position={[-5, 5, -2]} 
           intensity={0.4} 
           color="#b0c4de" 
-        />
-        <Environment 
-          files={environment || '/environments/appartement.hdr'} 
+        />        <Environment 
+          files={getEnvironmentPath(environment, isDesktop)} 
           background={environment ? true : false} 
           resolution={1024}
           blur={0}
