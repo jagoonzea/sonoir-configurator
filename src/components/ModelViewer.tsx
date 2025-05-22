@@ -322,17 +322,15 @@ const LoadingOverlay = () => {
 // Helper function to determine the correct environment path based on device
 const getEnvironmentPath = (environment: string, isDesktop: boolean): string => {
   if (!environment) {
-    return isDesktop ? '/environments/appartement.hdr' : '/environments/appartement_small.hdr';
+    return isDesktop ? '/environments/appartement.hdr' : '/environments/appartement_small.jpg';
   }
   
-  // If a specific environment is requested, use the _small version for mobile
+  // If a specific environment is requested, use the _small version for mobile with jpg extension
   if (!isDesktop) {
-    // Insert _small before the file extension
-    const parts = environment.split('.');
-    if (parts.length > 1) {
-      const ext = parts.pop();
-      return `${parts.join('.')}_small.${ext}`;
-    }
+    // Get the base name without extension
+    const baseName = environment.split('/').pop()?.split('.')[0];
+    // For mobile, use the _small.jpg version
+    return `/environments/${baseName}_small.jpg`;
   }
   
   return environment;
