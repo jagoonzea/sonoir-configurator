@@ -314,6 +314,7 @@ const Model: React.FC<{
             if (child.material) {
               newMaterial.name = child.material.name;
             }
+
             
             child.material = newMaterial;
             break;

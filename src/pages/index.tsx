@@ -541,7 +541,7 @@ export default function Home() {    // State for camera reset button
               materialInstance.map = diffuseTexture;
               diffuseTexture.wrapS = THREE.RepeatWrapping;
               diffuseTexture.wrapT = THREE.RepeatWrapping;
-              diffuseTexture.repeat.set(0.1, 0.1);
+              diffuseTexture.repeat.set(0.05, 0.05);
             }
             
             const normalTexture = textures[`${textureKeyBase}_normal`];
