@@ -420,7 +420,7 @@ const EnvironmentWrapper = ({ files, isDesktop, ...props }: { files: string, isD
     <Environment
       key={textureKey}
       files={files}
-      resolution={isDesktop ? 1920 : 1080}
+      resolution={1024}
       {...props}
     />
   );
@@ -553,7 +553,7 @@ const ModelViewer: React.FC<ViewerProps> = ({
         // Optimize for performance on mobile
         frameloop={isDesktop ? 'always' : 'demand'} 
         performance={{ min: 0.5 }}
-        dpr={isDesktop ? [1, 2] : [0.7, 1]} // Lower resolution on mobile
+        dpr={[1, 2]}
       >
         <CameraController position={cameraAngle} onPositionUpdate={onPositionUpdate} resetTrigger={resetTrigger} />
         <color attach="background" args={['#e7e5e4']} /> {/* stone-200 color always visible when no environment background */}
@@ -577,15 +577,13 @@ const ModelViewer: React.FC<ViewerProps> = ({
               files={getEnvironmentPath(environment, false)}
               background={environment ? true : false} // Don't show as background on mobile
               isDesktop={false}
-              resolution={256} // Very low res for mobile
-              blur={0} // Add blur to hide compression artifacts
+              blur={0}
               onError={handleEnvError}
             />
           ) : (            <EnvironmentWrapper 
               files={getEnvironmentPath(environment, true)}
               background={environment ? true : false} // Only show as background when environment is explicitly selected
               isDesktop={true}
-              resolution={1024}
               blur={0}
               onError={handleEnvError}
             />
