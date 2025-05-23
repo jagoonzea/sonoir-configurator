@@ -481,55 +481,52 @@ const ModelViewer: React.FC<ViewerProps> = ({
     window.addEventListener('resize', checkIfDesktop);
     
     return () => window.removeEventListener('resize', checkIfDesktop);
-  }, []);
-  React.useEffect(() => {
-    setShowEnvironmentLoading(true);
+  }, []);  React.useEffect(() => {
+    const envPath = getEnvironmentPath(environment, isDesktop);
+    
+    // Only show loading screen if this environment hasn't been loaded before
+    const shouldShowLoading = !loadedEnvironments.current.has(envPath);
+    setShowEnvironmentLoading(shouldShowLoading);
     
     THREE.Cache.clear();
     
-    const envPath = getEnvironmentPath(environment, isDesktop);
-      
     if (isInitialLoad.current) {
       isInitialLoad.current = false;
-      
-      // Limit to just one environment in memory on mobile
-      if (!isDesktop) loadedEnvironments.current.clear();
-      loadedEnvironments.current.add(envPath);
     }
     
-    // Much more aggressive memory management on mobile
-    if (!isDesktop) {
-      // On mobile, only keep track of the current environment
-      loadedEnvironments.current.clear();
-      loadedEnvironments.current.add(envPath);
-    } else {
-      // On desktop, limit to 5 environments
-      if (loadedEnvironments.current.size > 5) {
-        loadedEnvironments.current.clear();
-        loadedEnvironments.current.add(envPath);
-      }
-    }
-    
+    // Track this environment if it's not already tracked
     if (!loadedEnvironments.current.has(envPath)) {
-      loadedEnvironments.current.add(envPath);
-    }
-    
-    const timer = setTimeout(() => {
-      setShowEnvironmentLoading(false);
-    }, isDesktop ? 1500 : 2500);
-    
-    return () => {
-      clearTimeout(timer);
-      
-      // Force garbage collection if available
-      if (!isDesktop && window.gc) {
-        try {
-          window.gc();
-        } catch (e) {
-          console.log('GC not available');
-        }
+      // We only need to track 3 environments (all that exist in the app)
+      // This logic works the same for both mobile and desktop
+      if (loadedEnvironments.current.size >= 3) {
+        // If we already have 3 environments tracked, remove the oldest one
+        const environments = Array.from(loadedEnvironments.current);
+        loadedEnvironments.current.delete(environments[0]);
       }
-    };
+      
+      // Only show loading screen for the initial load of this environment
+      const timer = setTimeout(() => {
+        setShowEnvironmentLoading(false);
+        // Mark this environment as loaded after the loading screen disappears
+        loadedEnvironments.current.add(envPath);
+      }, isDesktop ? 1500 : 2500);
+      
+      return () => {
+        clearTimeout(timer);
+        
+        // Force garbage collection if available
+        if (!isDesktop && window.gc) {
+          try {
+            window.gc();
+          } catch (e) {
+            console.log('GC not available');
+          }
+        }
+      };
+    } else {
+      // Environment is already loaded, we can skip showing the loading screen
+      setShowEnvironmentLoading(false);
+    }
   }, [environment, isDesktop]);
   const [envError, setEnvError] = useState(false);
   
