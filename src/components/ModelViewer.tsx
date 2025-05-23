@@ -339,9 +339,12 @@ const Model: React.FC<{
   return <primitive object={gltf.scene} />;
 };
 
-// Loading overlay component to display for 2s minimum when the component loads
+// Loading overlay component that displays only during actual loading
 const LoadingOverlay = () => {
-  const { progress } = useProgress();
+  const { progress, active } = useProgress();
+  
+  // Only show when actively loading
+  if (!active && progress >= 100) return null;
   
   return (
     <div className="absolute inset-0 bg-black bg-opacity-50 flex flex-col items-center justify-center z-50">
@@ -504,16 +507,10 @@ const ModelViewer: React.FC<ViewerProps> = ({
         loadedEnvironments.current.delete(environments[0]);
       }
       
-      // Only show loading screen for the initial load of this environment
-      const timer = setTimeout(() => {
-        setShowEnvironmentLoading(false);
-        // Mark this environment as loaded after the loading screen disappears
-        loadedEnvironments.current.add(envPath);
-      }, isDesktop ? 1500 : 2500);
+      // Mark this environment as loaded immediately - no minimum duration
+      loadedEnvironments.current.add(envPath);
       
       return () => {
-        clearTimeout(timer);
-        
         // Force garbage collection if available
         if (!isDesktop && window.gc) {
           try {
