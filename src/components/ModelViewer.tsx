@@ -420,8 +420,7 @@ const EnvironmentWrapper = ({ files, isDesktop, ...props }: { files: string, isD
     <Environment
       key={textureKey} // Force recreation on file change or manual refresh
       files={files}
-      preset={isDesktop ? undefined : 'apartment'} // Use preset on mobile as fallback
-      resolution={isDesktop ? 1024 : 256} // Much lower res for mobile
+      resolution={isDesktop ? 1080 : 720} // Much lower res for mobile
       {...props}
     />
   );
@@ -477,26 +476,19 @@ const ModelViewer: React.FC<ViewerProps> = ({
       setIsDesktop(window.innerWidth >= 768); // 768px is standard md breakpoint in Tailwind
     };
     
-    // Check on mount
     checkIfDesktop();
     
-    // Add event listener for window resize
     window.addEventListener('resize', checkIfDesktop);
     
-    // Clean up
     return () => window.removeEventListener('resize', checkIfDesktop);
-  }, []);  // Enhanced memory management for environment loading with explicit cleanup
+  }, []);
   React.useEffect(() => {
-    // Always show loading when changing environments (prevents visual glitches during transitions)
     setShowEnvironmentLoading(true);
     
-    // Clear THREE.js cache to prevent texture memory leaks
     THREE.Cache.clear();
     
-    // Calculate the environment path each time based on the current state
     const envPath = getEnvironmentPath(environment, isDesktop);
       
-    // On initial load
     if (isInitialLoad.current) {
       isInitialLoad.current = false;
       
@@ -518,17 +510,14 @@ const ModelViewer: React.FC<ViewerProps> = ({
       }
     }
     
-    // If this is a new environment, add it to the set
     if (!loadedEnvironments.current.has(envPath)) {
       loadedEnvironments.current.add(envPath);
     }
     
-    // Hide overlay after a slight delay - longer on mobile to ensure proper loading
     const timer = setTimeout(() => {
       setShowEnvironmentLoading(false);
     }, isDesktop ? 1500 : 2500);
     
-    // Cleanup function runs when environment changes or component unmounts
     return () => {
       clearTimeout(timer);
       
@@ -581,15 +570,15 @@ const ModelViewer: React.FC<ViewerProps> = ({
           position={[-5, 5, -2]} 
           intensity={0.5} 
           color="#b0c4de" 
-        />          {/* Always load appartement environment for lighting, but only show as background when requested */}
+        />
         <Suspense fallback={null}>
           {!isDesktop ? (
             <EnvironmentWrapper
               files={getEnvironmentPath(environment, false)}
-              background={false} // Never use as background on mobile - use simpler lighting
+              background={environment ? true : false} // Don't show as background on mobile
               isDesktop={false}
               resolution={256} // Very low res for mobile
-              blur={1} // Add blur to hide compression artifacts
+              blur={0} // Add blur to hide compression artifacts
               onError={handleEnvError}
             />
           ) : (            <EnvironmentWrapper 
