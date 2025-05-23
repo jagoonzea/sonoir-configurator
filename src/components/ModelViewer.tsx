@@ -418,9 +418,9 @@ const EnvironmentWrapper = ({ files, isDesktop, ...props }: { files: string, isD
   
   return (
     <Environment
-      key={textureKey} // Force recreation on file change or manual refresh
+      key={textureKey}
       files={files}
-      resolution={isDesktop ? 1080 : 720} // Much lower res for mobile
+      resolution={isDesktop ? 1920 : 1080}
       {...props}
     />
   );
